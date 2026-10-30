@@ -1,3 +1,6 @@
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
+#include <vulkan/vulkan.hpp>
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE   // once, at global scope
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
 #include <VkBootstrap.h>
@@ -5,9 +8,7 @@
 #include <nvrhi/validation.h>
 #include <vector>
 #include <cstdio>
-#include <vulkan/vulkan_hpp_macros.hpp>
 
-#include "vulkan/vulkan_handles.hpp"
 
 struct Swap {
     vkb::Swapchain sc;
@@ -95,7 +96,8 @@ int main()
     dd.deviceExtensions = devExts;
     dd.numDeviceExtensions = 1;
 
-    nvrhi::DeviceHandle nv = nvrhi::vulkan::createDevice(dd);
+    nvrhi::vulkan::DeviceHandle nvVk = nvrhi::vulkan::createDevice(dd);
+    nvrhi::DeviceHandle nv = nvVk;
 #ifndef NDEBUG
     nv = nvrhi::validation::createValidationLayer(nv);
 #endif
@@ -126,11 +128,13 @@ int main()
 
         if (resize) {
             nv->waitForIdle();
-            swap.fbs.clear(); swap.textures.clear();
+            swap.fbs.clear();
+            swap.textures.clear();
             nv->runGarbageCollection();
-            VkSwapchainKHR old = swap.sc.swapchain;
-            swap = createSwap(dev, nv, old, w, h);
-            vkb::destroy_swapchain(/* old swapchain */ vkb::Swapchain{.device = dev.device, .swapchain = old});
+
+            Swap next = createSwap(dev, nv, swap.sc.swapchain, w, h);
+            vkb::destroy_swapchain(swap.sc);
+            swap = std::move(next);
             resize = false;
         }
 
@@ -139,16 +143,16 @@ int main()
                                            acquireSem, VK_NULL_HANDLE, &idx);
         if (r == VK_ERROR_OUT_OF_DATE_KHR) { resize = true; continue; }
 
-        nv->queueWaitForSemaphore(nvrhi::CommandQueue::Graphics, acquireSem, 0);
+        nvVk->queueWaitForSemaphore(nvrhi::CommandQueue::Graphics, acquireSem, 0);
 
         cmd->open();
         cmd->clearTextureFloat(swap.textures[idx], nvrhi::AllSubresources,
                                nvrhi::Color(0.1f, 0.2f, 0.4f, 1.f));
         cmd->close();
-        nv->executeCommandList(cmd);
+        nvVk->executeCommandList(cmd);
 
-        nv->queueSignalSemaphore(nvrhi::CommandQueue::Graphics, presentSem, 0);
-        nv->executeCommandLists(nullptr, 0);          // flush the pending signal
+        nvVk->queueSignalSemaphore(nvrhi::CommandQueue::Graphics, presentSem, 0);
+        nvVk->executeCommandLists(nullptr, 0);          // flush the pending signal
 
         VkPresentInfoKHR pi{VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
         pi.waitSemaphoreCount = 1; pi.pWaitSemaphores = &presentSem;

@@ -14,6 +14,7 @@ option(EUPHROSYNE_BUILD_BENCHMARKS "Build benchmarks" ON)
 
 include(cmake/CPM.cmake)
 include(cmake/deps.cmake)
+include(cmake/shaders.cmake)
 
 if (EUPHROSYNE_BUILD_EUPHROSYNE)
     add_subdirectory(euphrosyne)

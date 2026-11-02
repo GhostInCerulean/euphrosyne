@@ -1,0 +1,38 @@
+#pragma once
+#include <filesystem>
+#include <string_view>
+#include <vector>
+
+
+#include "euphrosyne/pch.hpp"
+#include "euphrosyne/utils/bytes/tag.hpp"
+
+namespace euphrosyne {
+    static constexpr uint32 kShaderArchiveMagic = MakeTag("ESHD");
+    static constexpr uint32 kShaderArchiveVersion = 0;
+
+    struct ShaderArchiveHeader {
+        uint32 magic;
+        uint32 version;
+        uint32 numShaders;
+        uint32 reserved;
+    };
+
+    struct ShaderArchiveEntry {
+        uint64 hash;
+        uint64 offset;
+        uint64 size;
+    };
+
+
+    class ShaderArchive {
+    private:
+        vector<uint8> data_;
+        vector<ShaderArchiveEntry> entries_;
+    public:
+        void Open(const filesystem::path& path); // TODO async counterpart
+        optional<span<const uint8>> Find(string_view name) const;
+        bool Contains(string_view name) const;
+    };
+
+} // namespace euphrosyne

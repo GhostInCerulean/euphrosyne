@@ -1,5 +1,10 @@
 add_library(euphrosyne SHARED
-        dummy.cpp
+        formats/shader_archive.cpp
+        formats/shader_archive.hpp
+        pch.hpp
+        utils/bytes/tag.hpp
+        utils/hash/fnv1a.hpp
+        utils/bytes/align.hpp
 )
 
 find_package(Vulkan REQUIRED)
@@ -9,11 +14,23 @@ target_link_libraries(euphrosyne PUBLIC
         nvrhi_vk
         flecs::flecs
         SDL3::SDL3
+        flux::flux
         glaze::glaze
         Vulkan::Vulkan
         vk-bootstrap::vk-bootstrap
+        Boost::unordered
+        Boost::asio
+        Boost::system
+)
+
+target_precompile_headers(euphrosyne PUBLIC
+        pch.hpp
 )
 
 target_include_directories(euphrosyne PUBLIC
         ${CMAKE_SOURCE_DIR}
+)
+
+target_compile_definitions(euphrosyne PUBLIC
+        BOOST_ASIO_HAS_IO_URING
 )

@@ -25,6 +25,7 @@ target_link_libraries(euphrosyne PUBLIC
         Boost::system
         quill::quill
         quill::fmtquill
+        soloud
 )
 
 target_precompile_headers(euphrosyne PUBLIC

@@ -55,3 +55,11 @@ CPMAddPackage(
         VERSION 13.1.0
         URL https://github.com/odygrd/quill/archive/refs/tags/v13.1.0.tar.gz
 )
+CPMAddPackage(
+        NAME soloud
+        URL https://github.com/jarikomppa/soloud/archive/e82fd32c1f62183922f08c14c814a02b58db1873.tar.gz
+        DOWNLOAD_ONLY YES
+)
+
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+add_subdirectory(${soloud_SOURCE_DIR}/contrib ${soloud_BINARY_DIR})

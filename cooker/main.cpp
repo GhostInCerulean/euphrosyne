@@ -1,10 +1,13 @@
 #include <iostream>
 
 #include "archive/archive_writer.hpp"
+#include "shaderc/compile.hpp"
 #include <CLI/App.hpp>
 
 using namespace euphrosyne;
 using namespace cooker;
+
+namespace fs = std::filesystem;
 
 int main(int argc, char** argv) {
     auto app = CLI::App{"Euphrosyne asset cooker"};
@@ -19,6 +22,22 @@ int main(int argc, char** argv) {
     CLI11_PARSE(app, argc, argv);
 
     if (*shaderc) {
+        const auto root = shader_root->as<std::string>();
+        const auto out  = shader_out->as<std::string>();
 
+        auto writer = ArchiveWriter();
+
+        for (const auto& entry : fs::recursive_directory_iterator(root)) {
+            if (!entry.is_regular_file() || entry.path().extension() != ".hlsl") {
+                continue;
+            }
+
+            auto key = fs::relative(entry.path(), root).string();
+            auto spirv = CompileHlsl(entry.path());
+
+            writer.Add(std::move(key), std::move(spirv));
+        }
+
+        writer.Write(out);
     }
 }

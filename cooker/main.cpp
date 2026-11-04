@@ -4,6 +4,8 @@
 #include "shaderc/compile.hpp"
 #include <CLI/App.hpp>
 
+#include "euphrosyne/dev/logging.hpp"
+
 using namespace euphrosyne;
 using namespace cooker;
 
@@ -21,6 +23,8 @@ int main(int argc, char** argv) {
 
     CLI11_PARSE(app, argc, argv);
 
+    auto cooker_logger = NewLogger("cooker", quill::LogLevel::Info, LogDestination::Console);
+
     if (*shaderc) {
         const auto root = shader_root->as<std::string>();
         const auto out  = shader_out->as<std::string>();
@@ -35,9 +39,11 @@ int main(int argc, char** argv) {
             auto key = fs::relative(entry.path(), root).string();
             auto spirv = CompileHlsl(entry.path());
 
+            LOG_INFO(cooker_logger, "Compiled shader {} to {} bytes of SPIR-V", key, spirv.size());
             writer.Add(std::move(key), std::move(spirv));
         }
 
-        writer.Write(out);
+        auto written = writer.Write(out);
+        LOG_INFO(cooker_logger, "Wrote shader archive {} of {} bytes", out, written);
     }
 }

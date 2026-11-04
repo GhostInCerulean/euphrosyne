@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 #include <filesystem>
+#include <quill/LogMacros.h>
+#include <quill/Logger.h>
 #include <boost/unordered/unordered_flat_map.hpp>
 
 namespace euphrosyne {

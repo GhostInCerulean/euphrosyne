@@ -5,6 +5,8 @@ add_library(euphrosyne SHARED
         utils/bytes/tag.hpp
         utils/hash/fnv1a.hpp
         utils/bytes/align.hpp
+        dev/logging.cpp
+        dev/logging.hpp
 )
 
 find_package(Vulkan REQUIRED)
@@ -21,6 +23,8 @@ target_link_libraries(euphrosyne PUBLIC
         Boost::unordered
         Boost::asio
         Boost::system
+        quill::quill
+        quill::fmtquill
 )
 
 target_precompile_headers(euphrosyne PUBLIC

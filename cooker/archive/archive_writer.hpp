@@ -13,6 +13,6 @@ namespace cooker {
         map<uint64, Item> items;
     public:
         void Add(string name, vector<uint8> data);
-        void Write(const filesystem::path& path) const;
+        uintsize Write(const filesystem::path& path) const;
     };
 } // namespace cooker

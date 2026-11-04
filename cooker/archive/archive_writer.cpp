@@ -14,7 +14,7 @@ namespace cooker {
         }
     }
 
-    void ArchiveWriter::Write(const filesystem::path &path) const {
+    uintsize ArchiveWriter::Write(const filesystem::path &path) const {
         auto file = ofstream(path, ios::binary | ios::trunc);
         if (!file) {
             throw runtime_error("Failed to open shader archive file for writing: " + path.string());
@@ -47,8 +47,15 @@ namespace cooker {
             i++;
         }
 
+        auto end = AlignTo(pos, 16);
+        file.write(zeros, streamsize(end - pos));
+        pos = end;
+
+        file.flush();
         if (!file) {
             throw runtime_error("Failed to write shader archive file: " + path.string());
         }
+
+        return pos;
     }
 } // namespace cooker

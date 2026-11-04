@@ -8,12 +8,12 @@
 namespace euphrosyne {
     void Archive::Open(const filesystem::path &path) {
         if (!entries_.empty()) {
-            throw runtime_error("ShaderArchive already opened");
+            throw runtime_error("Archive already opened");
         }
 
         auto file = ifstream(path, ios::binary | ios::ate);
         if (!file) {
-            throw runtime_error("Failed to open shader archive file: " + path.string());
+            throw runtime_error("Failed to open archive file: " + path.string());
         }
 
         data_.resize(file.tellg());
@@ -22,28 +22,28 @@ namespace euphrosyne {
 
         auto header = ArchiveHeader();
         if (data_.size() < sizeof(header)) {
-            throw runtime_error("Shader archive file too small: " + path.string());
+            throw runtime_error("Archive file too small: " + path.string());
         }
 
         memcpy(&header, data_.data(), sizeof(header));
-        if (header.magic != kShaderArchiveMagic) {
-            throw runtime_error("Invalid shader archive magic: " + path.string());
+        if (header.magic != kArchiveMagic) {
+            throw runtime_error("Invalid archive magic: " + path.string());
         }
-        if (header.version != kShaderArchiveVersion) {
-            throw runtime_error("Unsupported shader archive version: " + path.string());
+        if (header.version != kArchiveVersion) {
+            throw runtime_error("Unsupported archive version: " + path.string());
         }
 
-        auto tableEnd = sizeof(header) + sizeof(ArchiveEntry) * header.numShaders;
+        auto tableEnd = sizeof(header) + sizeof(ArchiveEntry) * header.numEntries;
         if (tableEnd > data_.size()) {
-            throw runtime_error("Shader archive file too small for table: " + path.string());
+            throw runtime_error("Archive file too small for table: " + path.string());
         }
 
-        entries_.resize(header.numShaders);
-        std::memcpy(entries_.data(), data_.data() + sizeof(header), sizeof(ArchiveEntry) * header.numShaders);
+        entries_.resize(header.numEntries);
+        std::memcpy(entries_.data(), data_.data() + sizeof(header), sizeof(ArchiveEntry) * header.numEntries);
 
         for (const auto &entry: entries_) {
             if (entry.offset + entry.size > data_.size()) {
-                throw runtime_error("Shader archive entry out of bounds: " + path.string());
+                throw runtime_error("Archive entry out of bounds: " + path.string());
             }
         }
     }

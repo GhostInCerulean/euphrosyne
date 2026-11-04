@@ -30,7 +30,7 @@ namespace cooker {
         auto header = ArchiveHeader{
             .magic = kShaderArchiveMagic,
             .version = kShaderArchiveVersion,
-            .numShaders = static_cast<uint32>(items.size()),
+            .numEntries = static_cast<uint32>(items.size()),
             .reserved = 0,
         };
         file.write(reinterpret_cast<const char *>(&header), sizeof(header));

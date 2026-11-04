@@ -1,6 +1,6 @@
 add_library(euphrosyne SHARED
-        formats/shader_archive.cpp
-        formats/shader_archive.hpp
+        formats/archive.cpp
+        formats/archive.hpp
         pch.hpp
         utils/bytes/tag.hpp
         utils/hash/fnv1a.hpp

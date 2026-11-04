@@ -1,12 +1,12 @@
-#include "shader_archive.hpp"
 #include <algorithm>
 #include <fstream>
+#include "archive.hpp"
 
 #include "euphrosyne/utils/hash/fnv1a.hpp"
 #include "flux.hpp"
 
 namespace euphrosyne {
-    void ShaderArchive::Open(const filesystem::path &path) {
+    void Archive::Open(const filesystem::path &path) {
         if (!entries_.empty()) {
             throw runtime_error("ShaderArchive already opened");
         }
@@ -20,7 +20,7 @@ namespace euphrosyne {
         file.seekg(0, ios::beg);
         file.read(reinterpret_cast<char *>(data_.data()), data_.size());
 
-        auto header = ShaderArchiveHeader();
+        auto header = ArchiveHeader();
         if (data_.size() < sizeof(header)) {
             throw runtime_error("Shader archive file too small: " + path.string());
         }
@@ -33,13 +33,13 @@ namespace euphrosyne {
             throw runtime_error("Unsupported shader archive version: " + path.string());
         }
 
-        auto tableEnd = sizeof(header) + sizeof(ShaderArchiveEntry) * header.numShaders;
+        auto tableEnd = sizeof(header) + sizeof(ArchiveEntry) * header.numShaders;
         if (tableEnd > data_.size()) {
             throw runtime_error("Shader archive file too small for table: " + path.string());
         }
 
         entries_.resize(header.numShaders);
-        std::memcpy(entries_.data(), data_.data() + sizeof(header), sizeof(ShaderArchiveEntry) * header.numShaders);
+        std::memcpy(entries_.data(), data_.data() + sizeof(header), sizeof(ArchiveEntry) * header.numShaders);
 
         for (const auto &entry: entries_) {
             if (entry.offset + entry.size > data_.size()) {
@@ -48,9 +48,9 @@ namespace euphrosyne {
         }
     }
 
-    optional<span<const uint8>> ShaderArchive::Find(string_view name) const {
+    optional<span<const uint8>> Archive::Find(string_view name) const {
         auto hash = FNV1A64(name);
-        auto it = ranges::lower_bound(entries_, hash, {}, &ShaderArchiveEntry::hash);
+        auto it = ranges::lower_bound(entries_, hash, {}, &ArchiveEntry::hash);
         if (it == entries_.end() || it->hash != hash) {
             return nullopt;
         } else {
@@ -58,5 +58,5 @@ namespace euphrosyne {
         }
     }
 
-    bool ShaderArchive::Contains(string_view name) const { return Find(name).has_value(); }
+    bool Archive::Contains(string_view name) const { return Find(name).has_value(); }
 } // namespace euphrosyne

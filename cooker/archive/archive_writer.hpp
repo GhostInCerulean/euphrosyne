@@ -5,7 +5,7 @@
 namespace cooker {
     using namespace euphrosyne;
 
-    class ShaderArchiveWriter {
+    class ArchiveWriter {
         struct Item {
             string name;
             vector<uint8> data;

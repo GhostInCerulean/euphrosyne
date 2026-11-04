@@ -11,24 +11,24 @@ namespace euphrosyne {
     static constexpr uint32 kShaderArchiveMagic = MakeTag("ESHD");
     static constexpr uint32 kShaderArchiveVersion = 0;
 
-    struct ShaderArchiveHeader {
+    struct ArchiveHeader {
         uint32 magic;
         uint32 version;
         uint32 numShaders;
         uint32 reserved;
     };
 
-    struct ShaderArchiveEntry {
+    struct ArchiveEntry {
         uint64 hash;
         uint64 offset;
         uint64 size;
     };
 
 
-    class ShaderArchive {
+    class Archive {
     private:
         vector<uint8> data_;
-        vector<ShaderArchiveEntry> entries_;
+        vector<ArchiveEntry> entries_;
     public:
         void Open(const filesystem::path& path); // TODO async counterpart
         optional<span<const uint8>> Find(string_view name) const;

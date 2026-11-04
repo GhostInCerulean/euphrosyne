@@ -1,7 +1,7 @@
 add_executable(euphrosyne_cooker
         main.cpp
-        shaders/shader_archive_writer.cpp
-        shaders/shader_archive_writer.hpp
+        archive/archive_writer.cpp
+        archive/archive_writer.hpp
         shaderc/run.cpp
         shaderc/run.hpp
 )

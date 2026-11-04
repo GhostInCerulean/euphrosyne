@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "shaders/shader_archive_writer.hpp"
+#include "archive/archive_writer.hpp"
 #include <CLI/App.hpp>
 
 using namespace euphrosyne;

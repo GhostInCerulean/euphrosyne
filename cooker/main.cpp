@@ -15,6 +15,10 @@ int main(int argc, char** argv) {
     auto app = CLI::App{"Euphrosyne asset cooker"};
     argv = app.ensure_utf8(argv);
 
+    auto sfxpack = app.add_subcommand("sfxpack", "Convert and pack sound effects into a single archive");
+    auto sfx_root = sfxpack->add_option("sfx_root", "Root directory of sound effect source files")->required();
+    auto sfx_out = sfxpack->add_option("sfx_out", "Output path for the sound effect archive")->required();
+
     auto shaderc = app.add_subcommand("shaderc", "Compile and pack shaders");
     auto shader_root = shaderc->add_option("shader_root", "Root directory of shader source files")->required();
     auto shader_out = shaderc->add_option("shader_out", "Output path for the shader archive")->required();
@@ -45,5 +49,7 @@ int main(int argc, char** argv) {
 
         auto written = writer.Write(out);
         LOG_INFO(cooker_logger, "Wrote shader archive {} of {} bytes", out, written);
+    } else if (*sfxpack) {
+
     }
 }

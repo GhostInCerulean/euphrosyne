@@ -5,6 +5,8 @@
 #include "vulkan/vulkan.hpp"
 #include "vulkan/vulkan_hpp_macros.hpp"
 
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
+
 namespace euphrosyne
 {
 GpuContext::GpuContext(SDL_Window *window, bool validation) : window_(window)

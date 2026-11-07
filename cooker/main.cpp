@@ -20,8 +20,19 @@ int main(int argc, char** argv) {
     auto sfx_out = sfxpack->add_option("sfx_out", "Output path for the sound effect archive")->required();
 
     auto shaderc = app.add_subcommand("shaderc", "Compile and pack shaders");
-    auto shader_root = shaderc->add_option("shader_root", "Root directory of shader source files")->required();
-    auto shader_out = shaderc->add_option("shader_out", "Output path for the shader archive")->required();
+
+    auto shader_roots = vector<string>();
+    auto shader_out = string();
+
+    shaderc->add_option("shader_roots", shader_roots,
+                        "Root directories of shader source files")
+           ->required()
+           ->expected(1, -1)               // one or more
+           ->check(CLI::ExistingDirectory);
+
+    shaderc->add_option("-o,--out", shader_out,
+                        "Output path for the shader archive")
+           ->required();
 
     app.require_subcommand();
 
@@ -30,25 +41,24 @@ int main(int argc, char** argv) {
     auto cooker_logger = NewLogger("cooker", quill::LogLevel::Info, LogDestination::Console);
 
     if (*shaderc) {
-        const auto root = shader_root->as<std::string>();
-        const auto out  = shader_out->as<std::string>();
-
         auto writer = ArchiveWriter();
 
-        for (const auto& entry : fs::recursive_directory_iterator(root)) {
-            if (!entry.is_regular_file() || entry.path().extension() != ".hlsl") {
-                continue;
+        for (const auto& root : shader_roots) {
+            for (const auto& entry : fs::recursive_directory_iterator(root)) {
+                if (!entry.is_regular_file() || entry.path().extension() != ".hlsl") {
+                    continue;
+                }
+
+                auto key = fs::relative(entry.path(), root).generic_string();
+                auto spirv = CompileHlsl(entry.path());
+
+                LOG_INFO(cooker_logger, "Compiled shader {} to {} bytes of SPIR-V", key, spirv.size());
+                writer.Add(std::move(key), std::move(spirv));
             }
-
-            auto key = fs::relative(entry.path(), root).string();
-            auto spirv = CompileHlsl(entry.path());
-
-            LOG_INFO(cooker_logger, "Compiled shader {} to {} bytes of SPIR-V", key, spirv.size());
-            writer.Add(std::move(key), std::move(spirv));
         }
 
-        auto written = writer.Write(out);
-        LOG_INFO(cooker_logger, "Wrote shader archive {} of {} bytes", out, written);
+        auto written = writer.Write(shader_out);
+        LOG_INFO(cooker_logger, "Wrote shader archive {} of {} bytes", shader_out, written);
     } else if (*sfxpack) {
 
     }

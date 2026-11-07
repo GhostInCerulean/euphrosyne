@@ -9,7 +9,7 @@ option(EUPHROSYNE_BUILD_EUPHROSYNE "Build the engine (duh)" ON)
 option(EUPHROSYNE_BUILD_COOKER "Build cooker" ON)
 
 option(EUPHROSYNE_BUILD_TESTS "Build tests" ON)
-option(EUPHROSYNE_BUILD_EXAMPLES "Build examples" ON)
+option(EUPHROSYNE_BUILD_EXAMPLE "Build the example" ON)
 option(EUPHROSYNE_BUILD_BENCHMARKS "Build benchmarks" ON)
 
 include(cmake/CPM.cmake)
@@ -28,8 +28,8 @@ if (EUPHROSYNE_BUILD_TESTS)
     add_subdirectory(tests)
 endif ()
 
-if (EUPHROSYNE_BUILD_EXAMPLES)
-    add_subdirectory(examples)
+if (EUPHROSYNE_BUILD_EXAMPLE)
+    add_subdirectory(example)
 endif ()
 
 if (EUPHROSYNE_BUILD_BENCHMARKS)

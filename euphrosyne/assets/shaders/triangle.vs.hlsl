@@ -3,7 +3,7 @@ struct VSOutput {
     float3 color    : COLOR0;
 };
 
-VSOutput main(uint vertexId : SV_VertexID) {
+VSOutput mainVS(uint vertexId : SV_VertexID) {
     static const float2 pos[3] = {
         float2( 0.0, -0.6),
         float2( 0.6,  0.6),

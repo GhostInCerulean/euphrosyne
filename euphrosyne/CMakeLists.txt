@@ -1,4 +1,4 @@
-add_library(euphrosyne SHARED
+add_library(euphrosyne STATIC
         formats/archive.cpp
         formats/archive.hpp
         pch.hpp
@@ -7,6 +7,8 @@ add_library(euphrosyne SHARED
         utils/bytes/align.hpp
         dev/logging.cpp
         dev/logging.hpp
+        utils/platform/paths.cpp
+        utils/platform/paths.hpp
 )
 
 find_package(Vulkan REQUIRED)
@@ -23,6 +25,7 @@ target_link_libraries(euphrosyne PUBLIC
         Boost::unordered
         Boost::asio
         Boost::system
+        Boost::dll
         quill::quill
         quill::fmtquill
         soloud

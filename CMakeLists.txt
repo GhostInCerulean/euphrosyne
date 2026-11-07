@@ -30,6 +30,7 @@ endif ()
 
 if (EUPHROSYNE_BUILD_EXAMPLE)
     add_subdirectory(example)
+    add_subdirectory(example_mod)
 endif ()
 
 if (EUPHROSYNE_BUILD_BENCHMARKS)

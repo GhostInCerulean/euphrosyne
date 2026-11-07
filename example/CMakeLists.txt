@@ -1,9 +1,18 @@
+add_library(euphrosyne_example_core STATIC
+        src/example_game.cpp
+        src/example_game.hpp
+)
+
+target_link_libraries(euphrosyne_example_core PUBLIC
+        euphrosyne
+)
+
 add_executable(euphrosyne_example
-        main.cpp
+        src/main.cpp
 )
 
 target_link_libraries(euphrosyne_example
-        euphrosyne
+        euphrosyne_example_core
 )
 
 euphrosyne_cook_shaders(euphrosyne_example shaders.pak

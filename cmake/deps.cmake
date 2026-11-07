@@ -6,11 +6,15 @@ CPMAddPackage(
         URL https://github.com/NVIDIA-RTX/NVRHI/archive/bf0bbd9b666a7297492beb1999a4ddc0dfded143.tar.gz
         OPTIONS
         "NVRHI_WITH_VULKAN ON"
+        "NVRHI_BUILD_SHARED OFF"
 )
 CPMAddPackage(
         NAME flecs
         VERSION 4.1.6
         URL https://github.com/SanderMertens/flecs/archive/refs/tags/v4.1.6.tar.gz
+        OPTIONS
+        "FLECS_SHARED OFF"
+        "FLECS_STATIC ON"
 )
 CPMAddPackage(
         NAME vk-bootstrap
@@ -61,5 +65,6 @@ CPMAddPackage(
         DOWNLOAD_ONLY YES
 )
 
+set(SOLOUD_STATIC ON CACHE BOOL "" FORCE)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 add_subdirectory(${soloud_SOURCE_DIR}/contrib ${soloud_BINARY_DIR})

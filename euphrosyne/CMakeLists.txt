@@ -16,7 +16,7 @@ target_link_libraries(nvrhi_vk PUBLIC nvrhi)
 target_link_libraries(euphrosyne PUBLIC
         nvrhi
         nvrhi_vk
-        flecs::flecs
+        flecs::flecs_static
         SDL3::SDL3
         flux::flux
         glaze::glaze

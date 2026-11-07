@@ -8,13 +8,13 @@
 #include "euphrosyne/utils/bytes/tag.hpp"
 
 namespace euphrosyne {
-    static constexpr uint32 kShaderArchiveMagic = MakeTag("ESHD");
-    static constexpr uint32 kShaderArchiveVersion = 0;
+    static constexpr uint32 kArchiveMagic = MakeTag("ARCH"); // btw
+    static constexpr uint32 kArchiveVersion = 0;
 
     struct ArchiveHeader {
         uint32 magic;
         uint32 version;
-        uint32 numShaders;
+        uint32 numEntries;
         uint32 reserved;
     };
 
@@ -25,6 +25,8 @@ namespace euphrosyne {
     };
 
 
+    /// Multiple files packed as one, all is loaded into memory, made for small files that are
+    /// often used in raw form such as shaders or SFX
     class Archive {
     private:
         vector<uint8> data_;

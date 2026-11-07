@@ -10,14 +10,14 @@ namespace cooker {
     void ArchiveWriter::Add(string name, vector<uint8> data) {
         auto [it, inserted] = items.emplace(FNV1A64(name), Item{std::move(name), std::move(data)});
         if (!inserted) {
-            throw runtime_error("ShaderArchiveWriter: Duplicate shader name or hash collision: " + name);
+            throw runtime_error("ArchiveWriter: Duplicate archive entry name or hash collision: " + name);
         }
     }
 
     uintsize ArchiveWriter::Write(const filesystem::path &path) const {
         auto file = ofstream(path, ios::binary | ios::trunc);
         if (!file) {
-            throw runtime_error("Failed to open shader archive file for writing: " + path.string());
+            throw runtime_error("Failed to open archive file for writing: " + path.string());
         }
 
         auto entries = vector<ArchiveEntry>();
@@ -28,9 +28,9 @@ namespace cooker {
         }
 
         auto header = ArchiveHeader{
-            .magic = kShaderArchiveMagic,
-            .version = kShaderArchiveVersion,
-            .numShaders = static_cast<uint32>(items.size()),
+            .magic = kArchiveMagic,
+            .version = kArchiveVersion,
+            .numEntries = static_cast<uint32>(items.size()),
             .reserved = 0,
         };
         file.write(reinterpret_cast<const char *>(&header), sizeof(header));
@@ -53,7 +53,7 @@ namespace cooker {
 
         file.flush();
         if (!file) {
-            throw runtime_error("Failed to write shader archive file: " + path.string());
+            throw runtime_error("Failed to write archive file: " + path.string());
         }
 
         return pos;

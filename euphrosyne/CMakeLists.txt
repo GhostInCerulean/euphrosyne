@@ -17,6 +17,8 @@ add_library(euphrosyne STATIC
         rendering/resource_manager.hpp
         rendering/pipeline_cache.cpp
         rendering/pipeline_cache.hpp
+        rendering/swapchain.cpp
+        rendering/swapchain.hpp
 )
 
 find_package(Vulkan REQUIRED)
@@ -49,4 +51,5 @@ target_include_directories(euphrosyne PUBLIC
 
 target_compile_definitions(euphrosyne PUBLIC
         BOOST_ASIO_HAS_IO_URING
+        VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1
 )

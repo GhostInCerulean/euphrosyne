@@ -9,6 +9,14 @@ add_library(euphrosyne STATIC
         dev/logging.hpp
         utils/platform/paths.cpp
         utils/platform/paths.hpp
+        rendering/renderer.cpp
+        rendering/renderer.hpp
+        rendering/gpu_context.cpp
+        rendering/gpu_context.hpp
+        rendering/resource_manager.cpp
+        rendering/resource_manager.hpp
+        rendering/pipeline_cache.cpp
+        rendering/pipeline_cache.hpp
 )
 
 find_package(Vulkan REQUIRED)

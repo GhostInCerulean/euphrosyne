@@ -13,8 +13,8 @@ CPMAddPackage(
         VERSION 4.1.6
         URL https://github.com/SanderMertens/flecs/archive/refs/tags/v4.1.6.tar.gz
         OPTIONS
-        "FLECS_SHARED OFF"
-        "FLECS_STATIC ON"
+        "FLECS_SHARED ON"
+        "FLECS_STATIC OFF"
 )
 CPMAddPackage(
         NAME vk-bootstrap
@@ -38,8 +38,8 @@ CPMAddPackage(
         VERSION 3.4.18
         URL https://github.com/libsdl-org/SDL/archive/refs/tags/release-3.4.18.tar.gz
         OPTIONS
-        "SDL_SHARED OFF"
-        "SDL_STATIC ON"
+        "SDL_SHARED ON"
+        "SDL_STATIC OFF"
         "SDL_TEST_LIBRARY OFF"
         "SDL_TESTS OFF"
         "SDL_INSTALL OFF"

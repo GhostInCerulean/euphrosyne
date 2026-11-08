@@ -12,6 +12,19 @@ option(EUPHROSYNE_BUILD_TESTS "Build tests" ON)
 option(EUPHROSYNE_BUILD_EXAMPLE "Build the example" ON)
 option(EUPHROSYNE_BUILD_BENCHMARKS "Build benchmarks" ON)
 
+option(EUPHROSYNE_ENABLE_AVX2 "Compile everything for AVX2 + FMA CPUs" ON)
+
+if (EUPHROSYNE_ENABLE_AVX2 AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|x64")
+    if (MSVC AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/arch:AVX2>)
+    else ()
+        add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-mavx2>
+                $<$<COMPILE_LANGUAGE:C,CXX>:-mfma>
+                $<$<COMPILE_LANGUAGE:C,CXX>:-mf16c>
+                $<$<COMPILE_LANGUAGE:C,CXX>:-mbmi2>)
+    endif ()
+endif ()
+
 include(cmake/CPM.cmake)
 include(cmake/deps.cmake)
 include(cmake/shaders.cmake)

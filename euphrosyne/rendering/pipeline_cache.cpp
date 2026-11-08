@@ -1,4 +1,5 @@
 #include "pipeline_cache.hpp"
 
-namespace euphrosyne {
-} // euphrosyne
+namespace euphrosyne
+{
+} // namespace euphrosyne

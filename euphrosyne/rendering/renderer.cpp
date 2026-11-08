@@ -1,4 +1,5 @@
 #include "renderer.hpp"
 
-namespace euphrosyne {
-} // euphrosyne
+namespace euphrosyne
+{
+} // namespace euphrosyne

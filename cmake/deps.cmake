@@ -25,7 +25,6 @@ CPMAddPackage(
         NAME Boost
         VERSION 1.92.0
         URL https://github.com/boostorg/boost/releases/download/boost-1.92.0/boost-1.92.0-cmake.tar.gz
-        # URL_HASH SHA256=<recompute for the .tar.gz, the old hash was for the .tar.xz>
 )
 CPMAddPackage(
         NAME CLI11
@@ -63,6 +62,42 @@ CPMAddPackage(
         NAME soloud
         URL https://github.com/jarikomppa/soloud/archive/e82fd32c1f62183922f08c14c814a02b58db1873.tar.gz
         DOWNLOAD_ONLY YES
+)
+CPMAddPackage(
+        NAME dylib
+        VERSION 3.0.1
+        URL https://github.com/martin-olivier/dylib/archive/refs/tags/v3.0.1.tar.gz
+)
+CPMAddPackage(
+        NAME hlslpp
+        VERSION 3.9
+        URL https://github.com/redorav/hlslpp/archive/refs/tags/3.9.tar.gz
+        DOWNLOAD_ONLY YES
+)
+
+if (hlslpp_ADDED AND NOT TARGET hlslpp::hlslpp)
+    add_library(hlslpp INTERFACE)
+    add_library(hlslpp::hlslpp ALIAS hlslpp)
+    target_include_directories(hlslpp SYSTEM INTERFACE ${hlslpp_SOURCE_DIR}/include)
+endif ()
+CPMAddPackage(
+        NAME googletest
+        VERSION 1.15.2
+        URL https://github.com/google/googletest/archive/refs/tags/v1.15.2.tar.gz
+)
+CPMAddPackage(
+        NAME benchmark
+        VERSION 1.10.0
+        URL https://github.com/google/benchmark/archive/refs/tags/v1.10.0.tar.gz
+)
+CPMAddPackage(
+        NAME glm
+        VERSION 1.0.3
+        URL https://github.com/g-truc/glm/archive/refs/tags/1.0.3.tar.gz
+        OPTIONS
+        "GLM_BUILD_TESTS OFF"
+        "GLM_BUILD_LIBRARY OFF"
+        "GLM_ENABLE_CXX_17 ON"
 )
 
 set(SOLOUD_STATIC ON CACHE BOOL "" FORCE)

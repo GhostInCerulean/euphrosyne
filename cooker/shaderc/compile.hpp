@@ -1,9 +1,10 @@
 #pragma once
-#include <filesystem>
 #include <euphrosyne/pch.hpp>
+#include <filesystem>
 
-namespace cooker {
+namespace cooker
+{
 using namespace euphrosyne;
 namespace fs = std::filesystem;
-    vector<uint8> CompileHlsl(const fs::path& path);
-}
+vector<uint8> CompileHlsl(const fs::path &path);
+} // namespace cooker

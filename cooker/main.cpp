@@ -11,7 +11,8 @@ using namespace cooker;
 
 namespace fs = std::filesystem;
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv)
+{
     auto app = CLI::App{"Euphrosyne asset cooker"};
     argv = app.ensure_utf8(argv);
 
@@ -24,15 +25,12 @@ int main(int argc, char** argv) {
     auto shader_roots = vector<string>();
     auto shader_out = string();
 
-    shaderc->add_option("shader_roots", shader_roots,
-                        "Root directories of shader source files")
-           ->required()
-           ->expected(1, -1)               // one or more
-           ->check(CLI::ExistingDirectory);
+    shaderc->add_option("shader_roots", shader_roots, "Root directories of shader source files")
+        ->required()
+        ->expected(1, -1) // one or more
+        ->check(CLI::ExistingDirectory);
 
-    shaderc->add_option("-o,--out", shader_out,
-                        "Output path for the shader archive")
-           ->required();
+    shaderc->add_option("-o,--out", shader_out, "Output path for the shader archive")->required();
 
     app.require_subcommand();
 
@@ -40,12 +38,16 @@ int main(int argc, char** argv) {
 
     auto cooker_logger = NewLogger("cooker", quill::LogLevel::Info, LogDestination::Console);
 
-    if (*shaderc) {
+    if (*shaderc)
+    {
         auto writer = ArchiveWriter();
 
-        for (const auto& root : shader_roots) {
-            for (const auto& entry : fs::recursive_directory_iterator(root)) {
-                if (!entry.is_regular_file() || entry.path().extension() != ".hlsl") {
+        for (const auto &root : shader_roots)
+        {
+            for (const auto &entry : fs::recursive_directory_iterator(root))
+            {
+                if (!entry.is_regular_file() || entry.path().extension() != ".hlsl")
+                {
                     continue;
                 }
 
@@ -59,7 +61,8 @@ int main(int argc, char** argv) {
 
         auto written = writer.Write(shader_out);
         LOG_INFO(cooker_logger, "Wrote shader archive {} of {} bytes", shader_out, written);
-    } else if (*sfxpack) {
-
+    }
+    else if (*sfxpack)
+    {
     }
 }

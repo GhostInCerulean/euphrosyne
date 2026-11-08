@@ -4,5 +4,6 @@
 
 #include "example_game.hpp"
 
-namespace example {
-} // example
+namespace example
+{
+} // namespace example

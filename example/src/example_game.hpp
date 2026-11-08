@@ -5,9 +5,10 @@ namespace example
 
 class ExampleGame
 {
-    public:
-    int Run(int argc, char** argv) {
-       return 0;
+  public:
+    int Run(int argc, char **argv)
+    {
+        return 0;
     }
 };
 

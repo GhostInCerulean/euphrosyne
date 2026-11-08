@@ -1,12 +1,12 @@
 #include "swapchain.hpp"
 
-namespace euphrosyne {
+namespace euphrosyne
+{
 Swapchain::Swapchain(GpuContext &ctx) : ctx_(ctx)
 {
     auto info = VkSemaphoreCreateInfo(VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
     vkCreateSemaphore(ctx_.VkDevice(), &info, nullptr, &acquire_sem_);
     vkCreateSemaphore(ctx_.VkDevice(), &info, nullptr, &render_done_sem_);
-
 }
 
 Swapchain::~Swapchain()
@@ -30,8 +30,8 @@ bool Swapchain::Recreate(uint32 width, uint32 height)
 
     auto swapchain_builder = vkb::SwapchainBuilder(ctx_.VkbDevice());
     swapchain_builder.set_desired_format({VK_FORMAT_B8G8R8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
-    .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
-    .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+        .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
+        .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
     if (swapchain_.swapchain)
         swapchain_builder.set_old_swapchain(swapchain_);
@@ -59,9 +59,10 @@ bool Swapchain::Recreate(uint32 width, uint32 height)
         texture_desc.initialState = nvrhi::ResourceStates::Present;
         texture_desc.debugName = "Backbuffer";
 
-        auto texture = ctx_.Device()->createHandleForNativeTexture(nvrhi::ObjectTypes::VK_Image, nvrhi::Object(img), texture_desc);
+        auto texture =
+            ctx_.Device()->createHandleForNativeTexture(nvrhi::ObjectTypes::VK_Image, nvrhi::Object(img), texture_desc);
         textures_.push_back(texture);
-        framebuffers_.push_back(ctx_.Device()->createFramebuffer(nvrhi::FramebufferDesc().addColorAttachment(texture)    ));
+        framebuffers_.push_back(ctx_.Device()->createFramebuffer(nvrhi::FramebufferDesc().addColorAttachment(texture)));
     }
 
     return true;
@@ -69,7 +70,8 @@ bool Swapchain::Recreate(uint32 width, uint32 height)
 
 bool Swapchain::Acquire(uint32 &image_index)
 {
-    auto vk_res = vkAcquireNextImageKHR(ctx_.VkDevice(), swapchain_.swapchain, UINT64_MAX, acquire_sem_, VK_NULL_HANDLE, &image_index);
+    auto vk_res = vkAcquireNextImageKHR(ctx_.VkDevice(), swapchain_.swapchain, UINT64_MAX, acquire_sem_, VK_NULL_HANDLE,
+                                        &image_index);
     return vk_res == VK_SUCCESS || vk_res == VK_SUBOPTIMAL_KHR;
 }
 
@@ -87,4 +89,4 @@ bool Swapchain::Present(uint32 image_index)
     vkQueueWaitIdle(ctx_.GraphicqQueue());
     return res == VK_SUCCESS;
 }
-} // euphrosyne
+} // namespace euphrosyne

@@ -19,6 +19,7 @@ add_library(euphrosyne STATIC
         rendering/pipeline_cache.hpp
         rendering/swapchain.cpp
         rendering/swapchain.hpp
+        mods/mod_info.h
 )
 
 find_package(Vulkan REQUIRED)
@@ -38,6 +39,9 @@ target_link_libraries(euphrosyne PUBLIC
         Boost::dll
         quill::quill
         quill::fmtquill
+        hlslpp::hlslpp
+        glm::glm
+        dylib
         soloud
 )
 
@@ -50,6 +54,6 @@ target_include_directories(euphrosyne PUBLIC
 )
 
 target_compile_definitions(euphrosyne PUBLIC
-        BOOST_ASIO_HAS_IO_URING
+        BOOST_ASIO_HAS_IO_URING=1
         VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1
 )

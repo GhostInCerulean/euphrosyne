@@ -36,14 +36,15 @@ GpuContext::GpuContext(SDL_Window *window, bool validation) : window_(window)
     if (!SDL_Vulkan_CreateSurface(window_, instance_.instance, nullptr, &surface_))
         throw runtime_error("Failed to create surface");
 
-    auto device_exts = vector<const char*>{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    auto device_exts = vector<const char *>{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
     auto vk12_features = VkPhysicalDeviceVulkan12Features();
     vk12_features.bufferDeviceAddress = VK_TRUE;
     vk12_features.descriptorIndexing = VK_TRUE;
     vk12_features.timelineSemaphore = VK_TRUE;
 
     auto selector = vkb::PhysicalDeviceSelector(instance_);
-    selector.set_surface(surface_).set_minimum_version(1, 3).set_required_features_12(vk12_features);;
+    selector.set_surface(surface_).set_minimum_version(1, 3).set_required_features_12(vk12_features);
+    ;
 
     for (const auto ext : device_exts)
         selector.add_required_extension(ext);

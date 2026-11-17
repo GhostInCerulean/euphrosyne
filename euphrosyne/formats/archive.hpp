@@ -37,6 +37,7 @@ class Archive
   public:
     void Open(const filesystem::path &path);
     awaitable<void> OpenAsync(const filesystem::path &path);
+    optional<span <const uint8>> Find(uint64 name) const;
     optional<span<const uint8>> Find(string_view name) const;
     bool Contains(string_view name) const;
 

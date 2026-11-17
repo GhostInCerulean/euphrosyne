@@ -4,7 +4,6 @@
 #include <fstream>
 
 #include "euphrosyne/utils/hash/fnv1a.hpp"
-#include "flux.hpp"
 #include <boost/asio/as_tuple.hpp>
 #include <boost/asio/read_at.hpp>
 #include <boost/asio/use_awaitable.hpp>
@@ -38,7 +37,7 @@ awaitable<void> Archive::OpenAsync(const filesystem::path &path)
 
     auto file = asio::random_access_file(co_await asio::this_coro::executor);
     auto error_code = boost::system::error_code();
-    file.open(path, asio::file_base::read_only, error_code);
+    file.open(path.string(), asio::file_base::read_only, error_code);
     if (error_code)
         throw runtime_error("Failed to open archive file");
 
@@ -55,9 +54,8 @@ awaitable<void> Archive::OpenAsync(const filesystem::path &path)
     Load(std::move(data), path);
 }
 
-optional<span<const uint8>> Archive::Find(string_view name) const
+optional<span<const uint8>> Archive::Find(uint64 hash) const
 {
-    auto hash = FNV1A64(name);
     auto it = ranges::lower_bound(entries_, hash, {}, &ArchiveEntry::hash);
     if (it == entries_.end() || it->hash != hash)
     {
@@ -67,6 +65,11 @@ optional<span<const uint8>> Archive::Find(string_view name) const
     {
         return span(data_.data() + it->offset, it->size);
     }
+}
+
+optional<span<const uint8>> Archive::Find(string_view name) const
+{
+    return Find(FNV1A64(name));
 }
 
 bool Archive::Contains(string_view name) const

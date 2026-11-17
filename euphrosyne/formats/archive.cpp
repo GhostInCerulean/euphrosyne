@@ -10,6 +10,13 @@
 
 namespace euphrosyne
 {
+// Verify layout guarantees that we need
+// It should never be false as we're not building for 32 bit machines but check anyway
+static_assert(sizeof(ArchiveHeader) == 16);
+static_assert(sizeof(ArchiveEntry) == 24);
+static_assert(is_trivially_copyable_v<ArchiveEntry>);
+static_assert(endian::native == endian::little, "archive format is little-endian");
+
 void Archive::Open(const filesystem::path &path)
 {
     if (!entries_.empty())

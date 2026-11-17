@@ -1,5 +1,12 @@
 #include "compile.hpp"
+
+#ifdef _WIN32
+#include <windows.h>
+#include <atlbase.h>
+#endif
+
 #include <dxc/dxcapi.h>
+#include <fstream>
 #include <iostream>
 
 namespace cooker

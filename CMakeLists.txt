@@ -14,6 +14,7 @@ option(EUPHROSYNE_BUILD_BENCHMARKS "Build benchmarks" ON)
 
 option(EUPHROSYNE_ENABLE_AVX2 "Compile everything for AVX2 + FMA CPUs" ON)
 
+# Handle AVX2
 if (EUPHROSYNE_ENABLE_AVX2 AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|x64")
     if (MSVC AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/arch:AVX2>)
@@ -24,6 +25,15 @@ if (EUPHROSYNE_ENABLE_AVX2 AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|x64"
                 $<$<COMPILE_LANGUAGE:C,CXX>:-mbmi2>)
     endif ()
 endif ()
+
+# Cache CPM pacakges
+if(NOT DEFINED CPM_SOURCE_CACHE AND NOT DEFINED ENV{CPM_SOURCE_CACHE})
+    if(WIN32)
+        set(CPM_SOURCE_CACHE "$ENV{USERPROFILE}/.cache/CPM" CACHE PATH "CPM source cache")
+    else()
+        set(CPM_SOURCE_CACHE "$ENV{HOME}/.cache/CPM" CACHE PATH "CPM source cache")
+    endif()
+endif()
 
 include(cmake/CPM.cmake)
 include(cmake/deps.cmake)

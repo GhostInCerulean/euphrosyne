@@ -51,13 +51,19 @@ int main(int argc, char **argv)
                     continue;
                 }
 
-                auto key = fs::relative(entry.path(), root).generic_string();
+                auto entry_path = entry.path();
+                entry_path.make_preferred();
+                auto key = fs::relative(entry_path, root).make_preferred().generic_string();
+                LOG_INFO(cooker_logger, "Compiling shader {}...", key);
                 auto spirv = CompileHlsl(entry.path());
-
                 LOG_INFO(cooker_logger, "Compiled shader {} to {} bytes of SPIR-V", key, spirv.size());
                 writer.Add(std::move(key), std::move(spirv));
             }
         }
+
+        auto out_path = fs::path(shader_out);
+        if (out_path.has_parent_path())
+            fs::create_directories(out_path.parent_path());
 
         auto written = writer.Write(shader_out);
         LOG_INFO(cooker_logger, "Wrote shader archive {} of {} bytes", shader_out, written);

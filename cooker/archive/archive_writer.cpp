@@ -1,6 +1,7 @@
 #include "archive_writer.hpp"
 
 #include <fstream>
+#include <utility>
 
 #include "euphrosyne/formats/archive.hpp"
 #include "euphrosyne/utils/bytes/align.hpp"
@@ -8,9 +9,10 @@
 
 namespace cooker
 {
-void ArchiveWriter::Add(string name, vector<uint8> data)
+void ArchiveWriter::Add(string name,vector<uint8> data)
 {
-    auto [it, inserted] = items.emplace(FNV1A64(name), Item{std::move(name), std::move(data)});
+    auto hash = FNV1A64(name);
+    auto [it, inserted] = items.emplace(hash, Item{.name = std::move(name), .data = std::move(data)});
     if (!inserted)
     {
         throw runtime_error("ArchiveWriter: Duplicate archive entry name or hash collision: " + name);

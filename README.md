@@ -28,7 +28,7 @@ ECS might seem daunting at first but when you learn it and how to architecture c
 
 Here is an example system using the health we just defined.
 ````c++
-struct HealthComponent 
+struct Health 
 {
     int value;
 };
@@ -38,13 +38,13 @@ struct HealthModule
     HealthModule(flecs::world& ecs) 
     {
         // 1. Declare your component to flecs
-        ecs.component<HealthComponent>()
+        ecs.component<Health>()
            .member<int>("value")
         
         // 2. Declare the system that kills dead entities
         ecs.system<const Health>("Kill health <= 0 entities") // runs on entities with these components, given a descriptive name
            .kind(flecs::PostUpdate) // run after other systems
-           .each([](flecs::entity e, const HealthComponent& health) 
+           .each([](flecs::entity e, const Health& health) 
            {
                 if (health.value <= 0) 
                 {

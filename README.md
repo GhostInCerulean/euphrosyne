@@ -37,15 +37,11 @@ struct HealthModule
 {
     HealthModule(flecs::world& ecs) 
     {
-        // 1. Declare your component to flecs, you don't have to be this verbose but
-        // this gives the flecs explorer more info
+        // 1. Declare your component to flecs
         ecs.component<HealthComponent>()
            .member<int>("value")
         
-        // 2. Declare the component as loadable from levels and prefabs
-        g_properties.register("health", PropertyType::I32);
-        
-        // 3. Declare the system that kills dead people
+        // 2. Declare the system that kills dead entities
         ecs.system<const Health>("Kill health <= 0 entities") // runs on entities with these components, given a descriptive name
            .kind(flecs::PostUpdate) // run after other systems
            .each([](flecs::entity e, const HealthComponent& health) 
@@ -66,7 +62,7 @@ Congrats, you've created a component and a system that runs on entities with tha
 Now how would we actually create entities that have that component?
 
 ## Making an asset
-With Blender (or Bforartists) and preferrably a level editor plugin such as [Anvil](https://anvilleveldesign.com/), create your asset. In this example,
+With Blender (or Bforartists) and preferably a level editor plugin such as [Anvil](https://anvilleveldesign.com/), create your asset. In this example,
 we are creating a level.
 ### 1. Model out your asset
 I've done something quite simple here, if your game's levels looks like that, it might be time to hire a level designer.
@@ -74,13 +70,12 @@ If your model has animations, this is also when you write them.
 ![blender1.png](.github/blender1.png)
 
 ### 2. Add the data for the properties you created via custom properties
-In the custom properties panel, create a new property, give it the name and type you want.
-Here we give it the `Integer` type and `health` name as it is what expected our code that we wrote earlier.
+In the custom properties panel, create a new property, give it a name following the convention `Component.field` and whatever type you want.
+In this example, we will go with `Health.value`.
 ![blender2.png](.github/blender2.png)
 
-Now we have:
-
-![blender3.png](.github/blender3.png)
+Now, in your game, the top mesh is a new entity with a `Transform` component set to its transform in Blender, an `Health` component with its value set to 0, and all
+the components needed to render it.
 
 ### 3. Save the file in the right subfolder of your game's `assets` folder
 

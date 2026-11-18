@@ -11,8 +11,11 @@ Euphrosyne is a performance focused Vulkan based game engine for stylized games,
 Euphrosyne was thought out for solo devs / small teams that care about quality and performance. 
 
 # What is the typical workflow?
-1) TODO example doing a level in Blender
-2) TODO example scripting a game mechanic
+An introduction to what you will spend 99% of your time doing if you make a game with Euphrosyne.
+## Making a level
+TODO example doing a level in Blender
+## Writing gameplay code
+TODO example scripting a game mechanic
 
 # Guide
 A guide to walk you through the multiple stages of development is available in the [docs/guide](docs/guide) folder.

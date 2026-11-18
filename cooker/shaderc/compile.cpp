@@ -2,12 +2,23 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#include <atlbase.h>
+#include <wrl/client.h>
+template <typename T> using CComPtr = Microsoft::WRL::ComPtr<T>;
 #endif
 
 #include <dxc/dxcapi.h>
 #include <fstream>
 #include <iostream>
+
+#ifdef __MINGW32__
+__CRT_UUID_DECL(IDxcBlob,           0x8BA5FB08, 0x5195, 0x40E2, 0xAC, 0x58, 0x0D, 0x98, 0x9C, 0x3A, 0x01, 0x02)
+__CRT_UUID_DECL(IDxcBlobEncoding,   0x7241D424, 0x2646, 0x4191, 0x97, 0xC0, 0x98, 0xE9, 0x6E, 0x42, 0xFC, 0x68)
+__CRT_UUID_DECL(IDxcBlobUtf8,       0x3DA636C9, 0xBA71, 0x4024, 0xA3, 0x01, 0x30, 0xCB, 0xF1, 0x25, 0x30, 0x5B)
+__CRT_UUID_DECL(IDxcIncludeHandler, 0x7F61FC7D, 0x950D, 0x467F, 0xB3, 0xE3, 0x3C, 0x02, 0xFB, 0x49, 0x18, 0x7C)
+__CRT_UUID_DECL(IDxcUtils,          0x4605C4CB, 0x2019, 0x492A, 0xAD, 0xA4, 0x65, 0xF2, 0x0B, 0xB7, 0xD6, 0x7F)
+__CRT_UUID_DECL(IDxcResult,         0x58346CDA, 0xDDE7, 0x4497, 0x94, 0x61, 0x6F, 0x87, 0xAF, 0x5E, 0x06, 0x59)
+__CRT_UUID_DECL(IDxcCompiler3,      0x228B4687, 0x5A6A, 0x4730, 0x90, 0x0C, 0x97, 0x02, 0xB2, 0x20, 0x3F, 0x54)
+#endif
 
 namespace cooker
 {
@@ -100,7 +111,7 @@ vector<uint8> CompileHlsl(const fs::path &path)
     };
 
     auto result = CComPtr<IDxcResult>();
-    compiler->Compile(&buf, args.data(), (UINT32)args.size(), includeHandler, IID_PPV_ARGS(&result));
+    compiler->Compile(&buf, args.data(), (UINT32)args.size(), includeHandler.Get(), IID_PPV_ARGS(&result));
 
     auto errors = CComPtr<IDxcBlobUtf8>();
     result->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errors), nullptr);

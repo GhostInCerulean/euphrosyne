@@ -17,7 +17,15 @@ A guide to walk you through the multiple stages of development is available in t
 Docs related to multiple engine components are available in the [docs](docs) folder.
 
 # Community
-TODO: Link to Armada community
+Euphrosyne's [official community server](https://armada.buzz/invite/naddr1qvzqqqyzz5pzqcacyk2y9vs8py4ef8shl946zfvynxwhcdzrjlnqeez6qp3n8d7vqqqqe54j0k#BAF_KQrG7ko8YPwkM9MvC4yE) is on Armada, a decentralized alternative to Discord. Making an account is just one click, you don't even need a mail or even a username.
+
+# Why would I want to use Blender as my editor?
+Most game engines roll their own editor. Why don't we? Well, its better for you and us!
+1. It allows you to author your assets directly in the editor, which increases your productivity a lot while level designing
+2. Most artists will already know it, which is ideal for small teams that don't have a level designer as any team member which knows Blender will be able to work as one
+3. Making a semi-decent editor takes time, a lot of time. Writing code to cook .blend files takes less time. 
+
+For those that would be learning Blender while they're making their game, we actually recommend [Bforartists](https://www.bforartists.co/) over Blender
 
 # What does it looks like?
 An introduction to what you will spend 99% of your time doing if you make a game with Euphrosyne.

@@ -34,7 +34,7 @@ An introduction to what you will spend 99% of your time doing if you make a game
 Euphrosyne is ECS based, and uses the [flecs](https://www.flecs.dev/flecs/) library as it's ECS engine.
 ECS might seem daunting at first but when you learn it and how to architecture code around it, it's quite powerful, intuitive and clean.
 
-Here is an example system using the health we just defined.
+Here is an example game mechanic: Health.
 ````c++
 struct Health 
 {
@@ -71,10 +71,9 @@ Now how would we actually create entities that have that component?
 
 ## Making an asset
 With Blender (or Bforartists) and preferably a level editor plugin such as [Anvil](https://anvilleveldesign.com/), create your asset. In this example,
-we are creating a level.
+we are creating a level with an entity with an `Health` component.
 ### 1. Model out your asset
 I've done something quite simple here, if your game's levels looks like that, it might be time to hire a level designer.
-If your model has animations, this is also when you write them.
 ![blender1.png](.github/blender1.png)
 
 ### 2. Add the data for the properties you created via custom properties
@@ -89,4 +88,4 @@ the components needed to render it.
 
 Here, it is a level, so we will save it in `assets/levels`.
 
-Congratulations, it will now be included in your game, and you will be able to load it.
+Congratulations, the level will now be included in your game, and you will be able to load it, and there will be the entity we just created.

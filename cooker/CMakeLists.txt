@@ -12,6 +12,7 @@ target_link_libraries(euphrosyne_cooker PRIVATE
         euphrosyne
         CLI11::CLI11
         Vulkan::dxc_lib
+        fastgltf::fastgltf
 )
 
 if (WIN32)

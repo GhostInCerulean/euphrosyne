@@ -69,12 +69,16 @@ CPMAddPackage(
         URL https://github.com/martin-olivier/dylib/archive/refs/tags/v3.0.1.tar.gz
 )
 CPMAddPackage(
+        NAME fastgltf
+        VERSION 1.0.1
+        URL https://github.com/spnda/fastgltf/archive/refs/tags/v1.0.1.tar.gz
+)
+CPMAddPackage(
         NAME hlslpp
         VERSION 3.9
         URL https://github.com/redorav/hlslpp/archive/refs/tags/3.9.tar.gz
         DOWNLOAD_ONLY YES
 )
-
 if (hlslpp_ADDED AND NOT TARGET hlslpp::hlslpp)
     add_library(hlslpp INTERFACE)
     add_library(hlslpp::hlslpp ALIAS hlslpp)

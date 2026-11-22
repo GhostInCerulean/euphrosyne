@@ -5,8 +5,8 @@ namespace euphrosyne
 Swapchain::Swapchain(GpuContext &ctx) : ctx_(ctx)
 {
     auto info = VkSemaphoreCreateInfo(VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-    vkCreateSemaphore(ctx_.VkDevice(), &info, nullptr, &acquire_sem_);
-    vkCreateSemaphore(ctx_.VkDevice(), &info, nullptr, &render_done_sem_);
+    vkCreateSemaphore(ctx_.RawVkDevice(), &info, nullptr, &acquire_sem_);
+    vkCreateSemaphore(ctx_.RawVkDevice(), &info, nullptr, &render_done_sem_);
 }
 
 Swapchain::~Swapchain()
@@ -18,8 +18,8 @@ Swapchain::~Swapchain()
     if (swapchain_.swapchain)
         vkb::destroy_swapchain(swapchain_);
 
-    vkDestroySemaphore(ctx_.VkDevice(), acquire_sem_, nullptr);
-    vkDestroySemaphore(ctx_.VkDevice(), render_done_sem_, nullptr);
+    vkDestroySemaphore(ctx_.RawVkDevice(), acquire_sem_, nullptr);
+    vkDestroySemaphore(ctx_.RawVkDevice(), render_done_sem_, nullptr);
 }
 
 bool Swapchain::Recreate(uint32 width, uint32 height)
@@ -70,7 +70,7 @@ bool Swapchain::Recreate(uint32 width, uint32 height)
 
 bool Swapchain::Acquire(uint32 &image_index)
 {
-    auto vk_res = vkAcquireNextImageKHR(ctx_.VkDevice(), swapchain_.swapchain, UINT64_MAX, acquire_sem_, VK_NULL_HANDLE,
+    auto vk_res = vkAcquireNextImageKHR(ctx_.RawVkDevice(), swapchain_.swapchain, UINT64_MAX, acquire_sem_, VK_NULL_HANDLE,
                                         &image_index);
     return vk_res == VK_SUCCESS || vk_res == VK_SUBOPTIMAL_KHR;
 }
@@ -84,9 +84,9 @@ bool Swapchain::Present(uint32 image_index)
     present_info.pSwapchains = &swapchain_.swapchain;
     present_info.pImageIndices = &image_index;
 
-    auto res = vkQueuePresentKHR(ctx_.GraphicqQueue(), &present_info);
+    auto res = vkQueuePresentKHR(ctx_.GraphicsQueue(), &present_info);
     // todo replace with per frame fences / nvrhi event queries later
-    vkQueueWaitIdle(ctx_.GraphicqQueue());
+    vkQueueWaitIdle(ctx_.GraphicsQueue());
     return res == VK_SUCCESS;
 }
 } // namespace euphrosyne

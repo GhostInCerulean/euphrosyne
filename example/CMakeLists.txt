@@ -1,4 +1,4 @@
-add_library(euphrosyne_example_core STATIC
+add_library(euphrosyne_example_core SHARED
         src/example_game.cpp
         src/example_game.hpp
 )
@@ -17,6 +17,6 @@ target_link_libraries(euphrosyne_example
 
 euphrosyne_cook_shaders(euphrosyne_example shaders.pak
         ROOTS
-        # ${CMAKE_SOURCE_DIR}/example/assets/shaders
+        ${CMAKE_SOURCE_DIR}/example/assets/shaders
         ${CMAKE_SOURCE_DIR}/euphrosyne/assets/shaders
 )

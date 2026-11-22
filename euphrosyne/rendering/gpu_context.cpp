@@ -25,9 +25,7 @@ GpuContext::GpuContext(SDL_Window *window, bool validation) : window_(window)
         instance_builder.request_validation_layers().use_default_debug_messenger();
 
     for (const auto extension : sdl_exts)
-    {
         instance_builder.enable_extension(extension);
-    }
 
     instance_ = instance_builder.build().value();
 
@@ -44,7 +42,6 @@ GpuContext::GpuContext(SDL_Window *window, bool validation) : window_(window)
 
     auto selector = vkb::PhysicalDeviceSelector(instance_);
     selector.set_surface(surface_).set_minimum_version(1, 3).set_required_features_12(vk12_features);
-    ;
 
     for (const auto ext : device_exts)
         selector.add_required_extension(ext);
@@ -87,7 +84,7 @@ nvrhi::vulkan::IDevice *GpuContext::VulkanDevice() const
     return vk_device_.Get();
 }
 
-VkDevice GpuContext::VkDevice() const
+VkDevice GpuContext::RawVkDevice() const
 {
     return vkb_device_.device;
 }
@@ -97,7 +94,7 @@ VkSurfaceKHR GpuContext::Surface() const
     return surface_;
 }
 
-VkQueue GpuContext::GraphicqQueue() const
+VkQueue GpuContext::GraphicsQueue() const
 {
     return graphics_queue_;
 }
@@ -107,7 +104,7 @@ vkb::Device &GpuContext::VkbDevice()
     return vkb_device_;
 }
 
-void GpuContext::WaitIdle()
+void GpuContext::WaitIdle() const
 {
     device_->waitForIdle();
 }

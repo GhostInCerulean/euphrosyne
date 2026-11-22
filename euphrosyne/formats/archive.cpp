@@ -20,15 +20,11 @@ static_assert(endian::native == endian::little, "archive format is little-endian
 void Archive::Open(const filesystem::path &path)
 {
     if (!entries_.empty())
-    {
         throw runtime_error("Archive already opened");
-    }
 
     auto file = ifstream(path, ios::binary | ios::ate);
     if (!file)
-    {
         throw runtime_error("Failed to open archive file: " + path.string());
-    }
 
     auto data = vector<uint8>(file.tellg());
     file.seekg(0, ios::beg);
@@ -65,13 +61,9 @@ optional<span<const uint8>> Archive::Find(uint64 hash) const
 {
     auto it = ranges::lower_bound(entries_, hash, {}, &ArchiveEntry::hash);
     if (it == entries_.end() || it->hash != hash)
-    {
         return nullopt;
-    }
     else
-    {
         return span(data_.data() + it->offset, it->size);
-    }
 }
 
 optional<span<const uint8>> Archive::Find(string_view name) const

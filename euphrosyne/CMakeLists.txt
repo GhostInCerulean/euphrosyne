@@ -1,25 +1,13 @@
+file(GLOB_RECURSE EUPHROSYNE_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/*.c"
+        "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
+)
+
 add_library(euphrosyne STATIC
-        formats/archive.cpp
-        formats/archive.hpp
-        pch.hpp
-        utils/bytes/tag.hpp
-        utils/hash/fnv1a.hpp
-        utils/bytes/align.hpp
-        dev/logging.cpp
-        dev/logging.hpp
-        utils/platform/paths.cpp
-        utils/platform/paths.hpp
-        rendering/renderer.cpp
-        rendering/renderer.hpp
-        rendering/gpu_context.cpp
-        rendering/gpu_context.hpp
-        rendering/resource_manager.cpp
-        rendering/resource_manager.hpp
-        rendering/pipeline_cache.cpp
-        rendering/pipeline_cache.hpp
-        rendering/swapchain.cpp
-        rendering/swapchain.hpp
-        mods/mod_info.h
+        ${EUPHROSYNE_SOURCES}
+        formats/texture.hpp
 )
 
 find_package(Vulkan REQUIRED)
@@ -43,6 +31,7 @@ target_link_libraries(euphrosyne PUBLIC
         glm::glm
         dylib
         soloud
+        euphrosyne_cpu_flags
 )
 
 target_precompile_headers(euphrosyne PUBLIC

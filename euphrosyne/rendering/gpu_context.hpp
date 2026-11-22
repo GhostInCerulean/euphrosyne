@@ -25,12 +25,12 @@ class GpuContext
     nvrhi::IDevice *Device() const;
     nvrhi::vulkan::IDevice *VulkanDevice() const;
 
-    VkDevice VkDevice() const;
+    VkDevice RawVkDevice() const;
     VkSurfaceKHR Surface() const;
-    VkQueue GraphicqQueue() const;
+    VkQueue GraphicsQueue() const;
     vkb::Device &VkbDevice();
 
-    void WaitIdle();
+    void WaitIdle() const;
 };
 
 } // namespace euphrosyne

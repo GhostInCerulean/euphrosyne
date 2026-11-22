@@ -11,10 +11,12 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <hlsl++.h>
 
 namespace euphrosyne
 {
 using namespace std;
+using namespace hlslpp;
 namespace asio = boost::asio;
 using boost::unordered_flat_map;
 using boost::asio::awaitable;

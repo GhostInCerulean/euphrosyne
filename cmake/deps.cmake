@@ -79,6 +79,16 @@ CPMAddPackage(
         URL https://github.com/zeux/meshoptimizer/releases/download/v1.3/meshoptimizer-1.3.tar.gz
 )
 CPMAddPackage(
+        NAME ktx
+        VERSION 4.4.2
+        URL https://github.com/KhronosGroup/KTX-Software/archive/refs/tags/v4.4.2.tar.gz
+        OPTIONS
+            "KTX_FEATURE_TOOLS OFF"
+            "KTX_FEATURE_TESTS OFF"
+            "KTX_FEATURE_LOADTEST_APPS OFF"
+            "KTX_FEATURE_STATIC_LIBRARY ON"
+)
+CPMAddPackage(
         NAME hlslpp
         VERSION 3.9
         URL https://github.com/redorav/hlslpp/archive/refs/tags/3.9.tar.gz
@@ -108,12 +118,6 @@ CPMAddPackage(
         "GLM_BUILD_LIBRARY OFF"
         "GLM_ENABLE_CXX_17 ON"
 )
-CPMAddPackage(
-        NAME meshoptimizer
-        VERSION 1.3
-        URL https://github.com/zeux/meshoptimizer/releases/download/v1.3/meshoptimizer-1.3.tar.gz
-)
-CPMAddPackage()
 
 set(SOLOUD_STATIC ON CACHE BOOL "" FORCE)
 set(SOLOUD_STATIC ON CACHE BOOL "" FORCE)

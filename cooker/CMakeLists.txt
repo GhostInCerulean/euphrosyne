@@ -1,9 +1,16 @@
+file(GLOB_RECURSE EUPHROSYNE_COOKER_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
+)
+
 add_executable(euphrosyne_cooker
-        main.cpp
-        archive/archive_writer.cpp
-        archive/archive_writer.hpp
-        shaderc/compile.cpp
-        shaderc/compile.hpp
+        ${EUPHROSYNE_COOKER_SOURCES}
+        src/blender/blender_to_gltf.cpp
+        src/blender/blender_to_gltf.hpp
+        src/texture_cooker.cpp
+        src/texture_cooker.hpp
 )
 
 find_package(Vulkan REQUIRED COMPONENTS dxc)
@@ -13,7 +20,10 @@ target_link_libraries(euphrosyne_cooker PRIVATE
         CLI11::CLI11
         Vulkan::dxc_lib
         fastgltf::fastgltf
-        meshoptimizer::meshoptimizer
+        Boost::process
+        ktx
+        meshoptimizer
+        euphrosyne_cpu_flags
 )
 
 if (WIN32)

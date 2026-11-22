@@ -111,7 +111,7 @@ vector<uint8> CompileHlsl(const fs::path &path)
     };
 
     auto result = CComPtr<IDxcResult>();
-    compiler->Compile(&buf, args.data(), (UINT32)args.size(), includeHandler.Get(), IID_PPV_ARGS(&result));
+    compiler->Compile(&buf, args.data(), (UINT32)args.size(), includeHandler, IID_PPV_ARGS(&result));
 
     auto errors = CComPtr<IDxcBlobUtf8>();
     result->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errors), nullptr);

@@ -1,3 +1,4 @@
+#include "SDL3/SDL_hints.h"
 #include "SDL3/SDL_init.h"
 #include "SDL3/SDL_oldnames.h"
 #include "euphrosyne/rendering/renderer.hpp"

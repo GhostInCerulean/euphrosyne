@@ -1,19 +1,21 @@
 #include "renderer.hpp"
 
+#include "euphrosyne/utils/sdl/sdl_exception.hpp"
+
 namespace euphrosyne
 {
 Diligent::NativeWindow GetNativeWindow(SDL_Window *window)
 {
     auto props = SDL_GetWindowProperties(window);
     if (!props)
-        throw runtime_error("Failed to get window properties");
+        throw SdlException("Failed to get window properties");
 
     auto native_window = Diligent::NativeWindow();
 
 #if defined(PLATFORM_LINUX)
     auto driver_raw = SDL_GetCurrentVideoDriver();
     if (!driver_raw)
-        throw runtime_error("Failed to get current video driver");
+        throw SdlException("Failed to get current video driver");
 
     auto driver = string_view(driver_raw);
 
@@ -22,7 +24,7 @@ Diligent::NativeWindow GetNativeWindow(SDL_Window *window)
         native_window.WindowId = SDL_GetNumberProperty(props, SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
         native_window.pDisplay = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_X11_DISPLAY_POINTER, nullptr);
         if (!native_window.WindowId || !native_window.pDisplay)
-            throw runtime_error("Failed to get X11 native props");
+            throw SdlException("Failed to get X11 native props");
     }
     else if (driver == "wayland")
     {
@@ -30,11 +32,11 @@ Diligent::NativeWindow GetNativeWindow(SDL_Window *window)
         native_window.pWaylandSurface = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr);
 
         if (!native_window.pDisplay || !native_window.pWaylandSurface)
-            throw runtime_error("Failed to get Wayland native props");
+            throw SdlException("Failed to get Wayland native props");
     }
     else
     {
-        throw runtime_error("Unsupported linux video driver");
+        throw SdlException("Unsupported linux video driver");
     }
 #elifdef PLATFORM_WIN32
     nw.hWnd = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
@@ -50,7 +52,7 @@ static uint2 GetPixelSize(SDL_Window* window)
     auto w = int32();
     auto h = int32();
     if (!SDL_GetWindowSizeInPixels(window, &w, &h))
-        throw runtime_error("Failed to get window size");
+        throw SdlException("Failed to get window size");
     return {w, h};
 }
 

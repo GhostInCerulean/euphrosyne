@@ -4,6 +4,8 @@
 
 namespace euphrosyne
 {
+EUPHROSYNE_DEFINE_LOGGER(renderer, DefaultLogLevel(), DefaultLogDestination());
+
 Diligent::NativeWindow GetNativeWindow(SDL_Window *window)
 {
     auto props = SDL_GetWindowProperties(window);
@@ -41,7 +43,7 @@ Diligent::NativeWindow GetNativeWindow(SDL_Window *window)
 #elifdef PLATFORM_WIN32
     nw.hWnd = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
     if (!nw.hWnd)
-        throw std::runtime_error("No HWND from SDL");
+        throw SdlException("No HWND from SDL");
 #else
 #error "Add a NativeWindow path for the platform
 #endif
@@ -58,6 +60,7 @@ static uint2 GetPixelSize(SDL_Window* window)
 
 Renderer::Renderer(SDL_Window *window) : window_(window)
 {
+    ELOG_INFO(renderer, "Creating Vulkan based renderer");
     auto factory = Diligent::GetEngineFactoryVk();
     if (!factory)
         throw runtime_error("Failed to get Vulkan engine factory");
@@ -94,12 +97,16 @@ Renderer::~Renderer()
     }
     if (render_device_)
         render_device_->IdleGPU();
+
+    ELOG_INFO(renderer, "Destroyed renderer");
 }
 
 void Renderer::Resize()
 {
     auto pixel_size = GetPixelSize(window_);
     swap_chain_->Resize(pixel_size.x, pixel_size.y);
+
+    ELOG_DEBUG(renderer, "Resized swap chain to {}x{}", uint32(pixel_size.x), uint32(pixel_size.y));
 }
 
 void Renderer::BeginFrame(float4 color)

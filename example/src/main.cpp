@@ -4,11 +4,13 @@
 #include "euphrosyne/rendering/renderer.hpp"
 #include "example_game.hpp"
 
+using namespace euphrosyne;
+
 int main(int argc, char **argv)
 {
     SDL_Init(SDL_INIT_VIDEO);
     auto window = SDL_CreateWindow("Dial", 1280, 720, SDL_WINDOW_RESIZABLE);
-    auto renderer = euphrosyne::Renderer(window);
+    auto renderer = Renderer(window);
     auto running = true;
 
     while (running)

@@ -7,11 +7,14 @@
 #include "EngineFactoryVk.h"
 #include "RefCntAutoPtr.hpp"
 #include "SDL3/SDL_video.h"
+#include "euphrosyne/dev/logging.hpp"
 
 #include <euphrosyne/pch.hpp>
 
 namespace euphrosyne
 {
+
+EUPHROSYNE_DECLARE_LOGGER(renderer);
 
 class Renderer
 {

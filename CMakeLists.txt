@@ -9,21 +9,7 @@ option(EUPHROSYNE_BUILD_TESTS "Build tests" ON)
 option(EUPHROSYNE_BUILD_EXAMPLE "Build the example" ON)
 option(EUPHROSYNE_BUILD_BENCHMARKS "Build benchmarks" ON)
 
-option(EUPHROSYNE_ENABLE_AVX2 "Compile everything for AVX2 + FMA CPUs" ON)
-
-# Handle AVX2
-add_library(euphrosyne_cpu_flags INTERFACE)
-if (EUPHROSYNE_ENABLE_AVX2 AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|x64")
-    if (MSVC AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        target_compile_options(euphrosyne_cpu_flags INTERFACE $<$<COMPILE_LANGUAGE:C,CXX>:/arch:AVX2>)
-    else ()
-        target_compile_options(euphrosyne_cpu_flags INTERFACE
-                $<$<COMPILE_LANGUAGE:C,CXX>:-mavx2>
-                $<$<COMPILE_LANGUAGE:C,CXX>:-mfma>
-                $<$<COMPILE_LANGUAGE:C,CXX>:-mf16c>
-                $<$<COMPILE_LANGUAGE:C,CXX>:-mbmi2>)
-    endif ()
-endif ()
+# option(EUPHROSYNE_ENABLE_AVX2 "Compile everything for AVX2 + FMA CPUs" ON)
 
 # Cache CPM packages
 #if(NOT DEFINED CPM_SOURCE_CACHE AND NOT DEFINED ENV{CPM_SOURCE_CACHE})

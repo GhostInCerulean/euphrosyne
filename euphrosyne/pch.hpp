@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <flux.hpp>
+#define QUILL_DISABLE_NON_PREFIXED_MACROS
 #include <quill/LogMacros.h>
 #include <quill/Logger.h>
 #include <string>

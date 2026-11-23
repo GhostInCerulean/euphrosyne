@@ -1,145 +1,473 @@
 #include "compile.hpp"
 
-#ifdef _WIN32
-#include <windows.h>
-#include <wrl/client.h>
-template <typename T> using CComPtr = Microsoft::WRL::ComPtr<T>;
-#endif
-
-#include <dxc/dxcapi.h>
+#include <algorithm>
+#include <cctype>
 #include <fstream>
 #include <iostream>
+#include <map>
+#include <regex>
+#include <sstream>
+#include <stdexcept>
 
-#ifdef __MINGW32__
-__CRT_UUID_DECL(IDxcBlob,           0x8BA5FB08, 0x5195, 0x40E2, 0xAC, 0x58, 0x0D, 0x98, 0x9C, 0x3A, 0x01, 0x02)
-__CRT_UUID_DECL(IDxcBlobEncoding,   0x7241D424, 0x2646, 0x4191, 0x97, 0xC0, 0x98, 0xE9, 0x6E, 0x42, 0xFC, 0x68)
-__CRT_UUID_DECL(IDxcBlobUtf8,       0x3DA636C9, 0xBA71, 0x4024, 0xA3, 0x01, 0x30, 0xCB, 0xF1, 0x25, 0x30, 0x5B)
-__CRT_UUID_DECL(IDxcIncludeHandler, 0x7F61FC7D, 0x950D, 0x467F, 0xB3, 0xE3, 0x3C, 0x02, 0xFB, 0x49, 0x18, 0x7C)
-__CRT_UUID_DECL(IDxcUtils,          0x4605C4CB, 0x2019, 0x492A, 0xAD, 0xA4, 0x65, 0xF2, 0x0B, 0xB7, 0xD6, 0x7F)
-__CRT_UUID_DECL(IDxcResult,         0x58346CDA, 0xDDE7, 0x4497, 0x94, 0x61, 0x6F, 0x87, 0xAF, 0x5E, 0x06, 0x59)
-__CRT_UUID_DECL(IDxcCompiler3,      0x228B4687, 0x5A6A, 0x4730, 0x90, 0x0C, 0x97, 0x02, 0xB2, 0x20, 0x3F, 0x54)
+#ifdef MAP_TYPE
+#undef MAP_TYPE
 #endif
+
+#include "Archiver.h"
+#include "ArchiverFactory.h"
+#include "ArchiverFactoryLoader.h"
+#include "DataBlob.h"
+#include "GraphicsTypes.h"
+#include "PipelineState.h"
+#include "RefCntAutoPtr.hpp"
+#include "SerializationDevice.h"
+#include "Shader.h"
+
+namespace dg = Diligent;
 
 namespace cooker
 {
-using namespace euphrosyne;
-
-const wchar_t *ProfileFor(const fs::path &p)
+namespace
 {
-    const std::string stage = p.stem().extension().string();
+// ---------------------------------------------------------------------------------------------
+// Small helpers
+// ---------------------------------------------------------------------------------------------
 
-    if (stage == ".vs")
-        return L"vs_6_0";
-    if (stage == ".ps")
-        return L"ps_6_0";
-    if (stage == ".cs")
-        return L"cs_6_0";
-    if (stage == ".gs")
-        return L"gs_6_0";
-    if (stage == ".hs")
-        return L"hs_6_0";
-    if (stage == ".ds")
-        return L"ds_6_0";
-    throw runtime_error("Unknown shader stage for file: " + p.string());
+std::string ReadFile(const fs::path &p)
+{
+    std::ifstream f(p, std::ios::binary);
+    if (!f)
+        throw std::runtime_error("Cannot open " + p.string());
+    std::stringstream ss;
+    ss << f.rdbuf();
+    return ss.str();
 }
 
-const wchar_t *EntryFor(const fs::path &p)
+// Replaces comments with spaces (keeps newlines so nothing else shifts).
+std::string StripComments(const std::string &s)
 {
-    const std::string stage = p.stem().extension().string();
-
-    if (stage == ".vs")
-        return L"mainVS";
-    if (stage == ".ps")
-        return L"mainPS";
-    if (stage == ".cs")
-        return L"mainCS";
-    if (stage == ".gs")
-        return L"mainGS";
-    if (stage == ".hs")
-        return L"mainHS";
-    if (stage == ".ds")
-        return L"mainDS";
-    throw runtime_error("Unknown shader stage for file: " + p.string());
+    std::string out = s;
+    const size_t n  = s.size();
+    for (size_t i = 0; i < n;)
+    {
+        if (s[i] == '/' && i + 1 < n && s[i + 1] == '/')
+        {
+            while (i < n && s[i] != '\n')
+                out[i++] = ' ';
+        }
+        else if (s[i] == '/' && i + 1 < n && s[i + 1] == '*')
+        {
+            out[i++] = ' ';
+            out[i++] = ' ';
+            while (i < n && !(s[i] == '*' && i + 1 < n && s[i + 1] == '/'))
+            {
+                if (s[i] != '\n')
+                    out[i] = ' ';
+                ++i;
+            }
+            if (i < n)
+            {
+                out[i++] = ' ';
+                if (i < n)
+                    out[i++] = ' ';
+            }
+        }
+        else
+            ++i;
+    }
+    return out;
 }
 
-vector<uint8> CompileHlsl(const fs::path &path)
+struct EntryInfo
 {
-    auto utils = CComPtr<IDxcUtils>();
-    DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&utils));
+    dg::SHADER_TYPE type;
+    const char     *name;
+};
 
-    auto compiler = CComPtr<IDxcCompiler3>();
-    DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&compiler));
+constexpr EntryInfo kEntries[] = {
+    {dg::SHADER_TYPE_VERTEX, "mainVS"},   {dg::SHADER_TYPE_PIXEL, "mainPS"},
+    {dg::SHADER_TYPE_GEOMETRY, "mainGS"}, {dg::SHADER_TYPE_HULL, "mainHS"},
+    {dg::SHADER_TYPE_DOMAIN, "mainDS"},   {dg::SHADER_TYPE_COMPUTE, "mainCS"},
+};
 
-    auto includeHandler = CComPtr<IDxcIncludeHandler>();
-    utils->CreateDefaultIncludeHandler(&includeHandler);
+// Finds "<identifier> mainXX (" outside comments. Rejects call sites like "return mainPS(".
+std::map<dg::SHADER_TYPE, const char *> DetectEntries(const std::string &source)
+{
+    const std::string code = StripComments(source);
 
-    auto file = std::ifstream(path, ios::binary);
-    auto ss = std::stringstream();
-    ss << file.rdbuf();
-    auto source = ss.str();
+    std::map<dg::SHADER_TYPE, const char *> found;
+    for (const auto &e : kEntries)
+    {
+        const std::regex re(std::string(R"(\b([A-Za-z_]\w*)\s+)") + e.name + R"(\s*\()");
+        for (std::sregex_iterator it(code.begin(), code.end(), re), end; it != end; ++it)
+        {
+            const std::string prev = (*it)[1];
+            if (prev == "return" || prev == "else" || prev == "case")
+                continue;
+            found[e.type] = e.name;
+            break;
+        }
+    }
+    return found;
+}
 
-    auto buf = DxcBuffer{source.data(), source.size(), DXC_CP_UTF8};
+// "// @key value" lines (read from the raw source, since comments are the carrier).
+std::map<std::string, std::string> ParseDirectives(const std::string &source)
+{
+    std::map<std::string, std::string> d;
+    std::istringstream                 in(source);
+    std::string                        line;
+    while (std::getline(in, line))
+    {
+        size_t i = 0;
+        while (i < line.size() && std::isspace(static_cast<unsigned char>(line[i])))
+            ++i;
+        if (line.compare(i, 2, "//") != 0)
+            continue;
+        i += 2;
+        while (i < line.size() && std::isspace(static_cast<unsigned char>(line[i])))
+            ++i;
+        if (i >= line.size() || line[i] != '@')
+            continue;
+        ++i;
 
-    // These must outlive the Compile() call, since args stores raw pointers
-    auto wpath = path.wstring();
-    auto dir = path.parent_path();
-    auto wdir = (dir.empty() ? fs::path(".") : dir).wstring();
+        size_t k = i;
+        while (k < line.size() && !std::isspace(static_cast<unsigned char>(line[k])))
+            ++k;
+        std::string key = line.substr(i, k - i);
 
-    auto args = std::vector<LPCWSTR>{
-        wpath.c_str(),
-        L"-I",
-        wdir.c_str(),
-        L"-E",
-        EntryFor(path),
-        L"-T",
-        ProfileFor(path),
-        L"-spirv",
-        L"-fspv-target-env=vulkan1.3",
-        // Match NVRHI's default Vulkan binding offsets
-        L"-fvk-t-shift",
-        L"0",
-        L"all",
-        L"-fvk-s-shift",
-        L"128",
-        L"all",
-        L"-fvk-b-shift",
-        L"256",
-        L"all",
-        L"-fvk-u-shift",
-        L"384",
-        L"all",
+        while (k < line.size() && std::isspace(static_cast<unsigned char>(line[k])))
+            ++k;
+        std::string value = line.substr(k);
+        while (!value.empty() && std::isspace(static_cast<unsigned char>(value.back())))
+            value.pop_back();
+
+        if (!key.empty())
+            d[key] = value;
+    }
+    return d;
+}
+
+dg::TEXTURE_FORMAT ParseFormat(const std::string &s)
+{
+    static const std::map<std::string, dg::TEXTURE_FORMAT> m = {
+        {"RGBA8", dg::TEX_FORMAT_RGBA8_UNORM},
+        {"RGBA8_SRGB", dg::TEX_FORMAT_RGBA8_UNORM_SRGB},
+        {"BGRA8", dg::TEX_FORMAT_BGRA8_UNORM},
+        {"BGRA8_SRGB", dg::TEX_FORMAT_BGRA8_UNORM_SRGB},
+        {"RGBA16F", dg::TEX_FORMAT_RGBA16_FLOAT},
+        {"R11G11B10F", dg::TEX_FORMAT_R11G11B10_FLOAT},
+        {"D32_FLOAT", dg::TEX_FORMAT_D32_FLOAT},
+        {"D24_S8", dg::TEX_FORMAT_D24_UNORM_S8_UINT},
+        {"NONE", dg::TEX_FORMAT_UNKNOWN},
     };
+    auto it = m.find(s);
+    if (it == m.end())
+        throw std::runtime_error("Unknown format directive value: " + s);
+    return it->second;
+}
 
-    auto result = CComPtr<IDxcResult>();
-    compiler->Compile(&buf, args.data(), (UINT32)args.size(), includeHandler, IID_PPV_ARGS(&result));
+bool ParseBool(const std::string &s)
+{
+    return s == "on" || s == "true" || s == "1";
+}
 
-    auto errors = CComPtr<IDxcBlobUtf8>();
-    result->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errors), nullptr);
-    const bool hasMessages = errors && errors->GetStringLength() > 0;
+dg::ARCHIVE_DEVICE_DATA_FLAGS ToDiligentFlags(Backend b)
+{
+    auto has = [&](Backend f) { return (static_cast<uint32_t>(b) & static_cast<uint32_t>(f)) != 0; };
 
-    auto status = HRESULT();
-    result->GetStatus(&status);
-    if (FAILED(status))
+    dg::ARCHIVE_DEVICE_DATA_FLAGS flags = dg::ARCHIVE_DEVICE_DATA_FLAG_NONE;
+    if (has(Backend::D3D11))
+        flags |= dg::ARCHIVE_DEVICE_DATA_FLAG_D3D11;
+    if (has(Backend::D3D12))
+        flags |= dg::ARCHIVE_DEVICE_DATA_FLAG_D3D12;
+    if (has(Backend::Vulkan))
+        flags |= dg::ARCHIVE_DEVICE_DATA_FLAG_VULKAN;
+    if (has(Backend::GL))
+        flags |= dg::ARCHIVE_DEVICE_DATA_FLAG_GL;
+    if (has(Backend::GLES))
+        flags |= dg::ARCHIVE_DEVICE_DATA_FLAG_GLES;
+    if (has(Backend::MetalMac))
+        flags |= dg::ARCHIVE_DEVICE_DATA_FLAG_METAL_MACOS;
+    if (has(Backend::MetalIOS))
+        flags |= dg::ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS;
+    return flags;
+}
+} // namespace
+
+// ---------------------------------------------------------------------------------------------
+// Impl
+// ---------------------------------------------------------------------------------------------
+
+struct ShaderArchiver::Impl
+{
+    Options                                     options;
+    dg::ARCHIVE_DEVICE_DATA_FLAGS               flags = dg::ARCHIVE_DEVICE_DATA_FLAG_NONE;
+    dg::IArchiverFactory                       *factory = nullptr;
+    dg::RefCntAutoPtr<dg::ISerializationDevice> serDevice;
+    dg::RefCntAutoPtr<dg::IArchiver>            archiver;
+
+    explicit Impl(const Options &opt) : options(opt), flags(ToDiligentFlags(opt.backends))
     {
-        string msg = hasMessages ? string(errors->GetStringPointer(), errors->GetStringLength()) : "unknown error";
-        throw runtime_error("Shader compilation failed for " + path.string() + ":\n" + msg);
+        if (flags == dg::ARCHIVE_DEVICE_DATA_FLAG_NONE)
+            throw std::runtime_error("No backends selected for the archive");
+
+#ifdef EXPLICITLY_LOAD_ARCHIVER_FACTORY_DLL
+        auto getFactory = dg::LoadArchiverFactory(options.library.c_str());
+        if (!getFactory)
+            throw std::runtime_error("Failed to load archiver library: " + options.library);
+        factory = getFactory();
+#else
+        factory = dg::GetArchiverFactory();
+#endif
+        if (!factory)
+            throw std::runtime_error("Archiver factory is null");
+
+        dg::SerializationDeviceCreateInfo ci;
+        // Replaces the old -fspv-target-env=vulkan1.3. Verify field names in SerializationDevice.h.
+        ci.Vulkan.ApiVersion = dg::Version{1, 3};
+        factory->CreateSerializationDevice(ci, &serDevice);
+        if (!serDevice)
+            throw std::runtime_error("CreateSerializationDevice failed");
+
+        factory->CreateArchiver(serDevice, &archiver);
+        if (!archiver)
+            throw std::runtime_error("CreateArchiver failed");
     }
 
-    // Succeeded, but there may be warnings
-    if (hasMessages)
+    // Compile one entry point from one file into a serialization-device shader.
+    dg::RefCntAutoPtr<dg::IShader> Compile(const fs::path &file, const fs::path &root, const char *entry,
+                                           dg::SHADER_TYPE type, const std::string &shaderName)
     {
-        std::cerr << "Shader warnings for " << path.string() << ":\n"
-                  << string(errors->GetStringPointer(), errors->GetStringLength()) << "\n";
+        const std::string rel = fs::relative(file, root).generic_string();
+
+        // Search the root (for "foo/bar.hlsli" style includes) and the file's own directory.
+        std::string searchDirs = root.string();
+        const auto  parent     = file.parent_path();
+        if (!parent.empty() && parent != root)
+            searchDirs += ";" + parent.string();
+
+        dg::RefCntAutoPtr<dg::IShaderSourceInputStreamFactory> streams;
+        factory->CreateDefaultShaderSourceStreamFactory(searchDirs.c_str(), &streams);
+
+        dg::RefCntAutoPtr<dg::IDataBlob> compilerOutput;
+
+        dg::ShaderCreateInfo ci;
+        ci.Desc.Name                  = shaderName.c_str();
+        ci.Desc.ShaderType            = type;
+        ci.FilePath                   = rel.c_str();
+        ci.EntryPoint                 = entry;
+        ci.SourceLanguage             = dg::SHADER_SOURCE_LANGUAGE_HLSL;
+        ci.ShaderCompiler             = dg::SHADER_COMPILER_DXC;
+        ci.HLSLVersion                = dg::ShaderVersion{static_cast<dg::Uint8>(options.hlslMajor),
+                                                           static_cast<dg::Uint8>(options.hlslMinor)};
+        ci.pShaderSourceStreamFactory = streams;
+
+        dg::ShaderArchiveInfo archiveInfo;
+        archiveInfo.DeviceFlags = flags;
+
+        dg::RefCntAutoPtr<dg::IShader> shader;
+        serDevice->CreateShader(ci, archiveInfo, &shader, &compilerOutput);
+
+        if (compilerOutput && compilerOutput->GetSize() > 0)
+        {
+            std::cerr << "[" << shaderName << "] compiler output:\n"
+                      << std::string(static_cast<const char *>(compilerOutput->GetConstDataPtr()),
+                                     compilerOutput->GetSize())
+                      << "\n";
+        }
+        if (!shader)
+            throw std::runtime_error("Shader compilation failed: " + shaderName);
+        return shader;
     }
 
-    auto spirv = CComPtr<IDxcBlob>();
-    result->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&spirv), nullptr);
-    if (!spirv)
+    void AddCompute(const std::string &name, dg::IShader *cs)
     {
-        throw runtime_error("Shader compilation failed: no SPIR-V output");
+        dg::ComputePipelineStateCreateInfo ci;
+        ci.PSODesc.Name         = name.c_str();
+        ci.PSODesc.PipelineType = dg::PIPELINE_TYPE_COMPUTE;
+        ci.pCS                  = cs;
+
+        dg::PipelineStateArchiveInfo archiveInfo;
+        archiveInfo.DeviceFlags = flags;
+
+        dg::RefCntAutoPtr<dg::IPipelineState> pso;
+        serDevice->CreateComputePipelineState(ci, archiveInfo, &pso);
+        if (!pso)
+            throw std::runtime_error("Failed to create compute PSO: " + name);
+        archiver->AddPipelineState(pso);
     }
-    auto p = reinterpret_cast<const uint8_t *>(spirv->GetBufferPointer());
-    auto size = spirv->GetBufferSize();
-    return vector<uint8_t>(p, p + size);
+
+    void AddGraphics(const std::string &name, dg::GraphicsPipelineStateCreateInfo &ci)
+    {
+        dg::PipelineStateArchiveInfo archiveInfo;
+        archiveInfo.DeviceFlags = flags;
+
+        dg::RefCntAutoPtr<dg::IPipelineState> pso;
+        serDevice->CreateGraphicsPipelineState(ci, archiveInfo, &pso);
+        if (!pso)
+            throw std::runtime_error("Failed to create graphics PSO: " + name);
+        archiver->AddPipelineState(pso);
+    }
+
+    void CookFile(const fs::path &path, const fs::path &root, const PsoHook &hook)
+    {
+        const std::string source  = ReadFile(path);
+        const auto        entries = DetectEntries(source);
+        if (entries.empty())
+        {
+            std::cerr << "Skipping (no mainXX entry): " << path.string() << "\n";
+            return;
+        }
+
+        const std::string name = fs::relative(path, root).replace_extension().generic_string();
+
+        // Compile each entry once; shader names are "<pso>:<entry>".
+        std::map<dg::SHADER_TYPE, dg::RefCntAutoPtr<dg::IShader>> shaders;
+        for (const auto &[type, entry] : entries)
+            shaders[type] = Compile(path, root, entry, type, name + ":" + entry);
+
+        if (auto cs = shaders.find(dg::SHADER_TYPE_COMPUTE); cs != shaders.end())
+        {
+            if (shaders.size() > 1)
+                std::cerr << path.string() << ": mixes mainCS with graphics stages, cooking compute only\n";
+            AddCompute(name, cs->second);
+            return;
+        }
+
+        if (!shaders.count(dg::SHADER_TYPE_VERTEX))
+            throw std::runtime_error(path.string() + ": graphics stages found but no mainVS");
+
+        dg::GraphicsPipelineStateCreateInfo ci;
+        ci.PSODesc.Name                               = name.c_str();
+        ci.PSODesc.PipelineType                       = dg::PIPELINE_TYPE_GRAPHICS;
+        ci.PSODesc.ResourceLayout.DefaultVariableType = dg::SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE;
+
+        auto &g                             = ci.GraphicsPipeline;
+        g.PrimitiveTopology                 = dg::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        g.NumRenderTargets                  = 1;
+        g.RTVFormats[0]                     = dg::TEX_FORMAT_RGBA8_UNORM_SRGB;
+        g.DSVFormat                         = dg::TEX_FORMAT_D32_FLOAT;
+        g.RasterizerDesc.CullMode           = dg::CULL_MODE_BACK;
+        g.DepthStencilDesc.DepthEnable      = true;
+        g.DepthStencilDesc.DepthWriteEnable = true;
+        g.DepthStencilDesc.DepthFunc        = dg::COMPARISON_FUNC_LESS;
+
+        const auto d = ParseDirectives(source);
+        auto       get = [&](const char *k) -> const std::string * {
+            auto it = d.find(k);
+            return it == d.end() ? nullptr : &it->second;
+        };
+
+        if (auto v = get("rtv"))
+        {
+            g.RTVFormats[0]    = ParseFormat(*v);
+            g.NumRenderTargets = g.RTVFormats[0] == dg::TEX_FORMAT_UNKNOWN ? 0 : 1;
+        }
+        if (auto v = get("dsv"))
+        {
+            g.DSVFormat = ParseFormat(*v);
+            if (g.DSVFormat == dg::TEX_FORMAT_UNKNOWN)
+                g.DepthStencilDesc.DepthEnable = false;
+        }
+        if (auto v = get("cull"))
+        {
+            g.RasterizerDesc.CullMode = *v == "none"    ? dg::CULL_MODE_NONE
+                                        : *v == "front" ? dg::CULL_MODE_FRONT
+                                                        : dg::CULL_MODE_BACK;
+        }
+        if (auto v = get("depth_test"))
+            g.DepthStencilDesc.DepthEnable = ParseBool(*v);
+        if (auto v = get("depth_write"))
+            g.DepthStencilDesc.DepthWriteEnable = ParseBool(*v);
+        if (auto v = get("blend"); v && ParseBool(*v))
+        {
+            auto &rt        = g.BlendDesc.RenderTargets[0];
+            rt.BlendEnable  = true;
+            rt.SrcBlend     = dg::BLEND_FACTOR_SRC_ALPHA;
+            rt.DestBlend    = dg::BLEND_FACTOR_INV_SRC_ALPHA;
+            rt.BlendOp      = dg::BLEND_OPERATION_ADD;
+            rt.SrcBlendAlpha  = dg::BLEND_FACTOR_ONE;
+            rt.DestBlendAlpha = dg::BLEND_FACTOR_INV_SRC_ALPHA;
+            rt.BlendOpAlpha   = dg::BLEND_OPERATION_ADD;
+        }
+        if (auto v = get("topology"))
+        {
+            g.PrimitiveTopology = *v == "lines"   ? dg::PRIMITIVE_TOPOLOGY_LINE_LIST
+                                  : *v == "points" ? dg::PRIMITIVE_TOPOLOGY_POINT_LIST
+                                  : *v == "strip"  ? dg::PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP
+                                                   : dg::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        }
+
+        ci.pVS = shaders[dg::SHADER_TYPE_VERTEX];
+        if (shaders.count(dg::SHADER_TYPE_PIXEL))
+            ci.pPS = shaders[dg::SHADER_TYPE_PIXEL];
+        if (shaders.count(dg::SHADER_TYPE_GEOMETRY))
+            ci.pGS = shaders[dg::SHADER_TYPE_GEOMETRY];
+        if (shaders.count(dg::SHADER_TYPE_HULL))
+            ci.pHS = shaders[dg::SHADER_TYPE_HULL];
+        if (shaders.count(dg::SHADER_TYPE_DOMAIN))
+            ci.pDS = shaders[dg::SHADER_TYPE_DOMAIN];
+
+        if (hook)
+            hook(name, ci);
+
+        AddGraphics(name, ci);
+    }
+};
+
+// ---------------------------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------------------------
+
+ShaderArchiver::ShaderArchiver(const Options &options) : impl_(std::make_unique<Impl>(options)) {}
+ShaderArchiver::~ShaderArchiver() = default;
+
+void ShaderArchiver::CookDirectory(const fs::path &root, const PsoHook &hook)
+{
+    std::vector<fs::path> files;
+    for (const auto &e : fs::recursive_directory_iterator(root))
+        if (e.is_regular_file() && e.path().extension() == ".hlsl")
+            files.push_back(e.path());
+    std::sort(files.begin(), files.end()); // deterministic archive contents
+
+    size_t failures = 0;
+    for (const auto &f : files)
+    {
+        try
+        {
+            impl_->CookFile(f, root, hook);
+        }
+        catch (const std::exception &ex)
+        {
+            ++failures;
+            std::cerr << "ERROR: " << f.string() << ": " << ex.what() << "\n";
+        }
+    }
+    if (failures)
+        throw std::runtime_error(std::to_string(failures) + " shader file(s) failed to cook");
+}
+
+std::vector<uint8_t> ShaderArchiver::Serialize()
+{
+    dg::RefCntAutoPtr<dg::IDataBlob> blob;
+    impl_->archiver->SerializeToBlob(impl_->options.contentVersion, &blob);
+    if (!blob)
+        throw std::runtime_error("Archive serialization failed");
+
+    const auto *p = static_cast<const uint8_t *>(blob->GetConstDataPtr());
+    return std::vector<uint8_t>(p, p + blob->GetSize());
+}
+
+void ShaderArchiver::SerializeToFile(const fs::path &outFile)
+{
+    const auto bytes = Serialize();
+    if (!outFile.parent_path().empty())
+        fs::create_directories(outFile.parent_path());
+
+    std::ofstream f(outFile, std::ios::binary);
+    if (!f)
+        throw std::runtime_error("Cannot write " + outFile.string());
+    f.write(reinterpret_cast<const char *>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
 }
 } // namespace cooker

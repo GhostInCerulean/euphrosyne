@@ -9,6 +9,13 @@ CPMAddPackage(
         "NVRHI_BUILD_SHARED OFF"
 )
 CPMAddPackage(
+        NAME DiligentCore
+        GIT_REPOSITORY https://github.com/DiligentGraphics/DiligentCore.git
+        GIT_TAG master
+        GIT_SUBMODULES_RECURSE ON
+        GIT_SHALLOW ON
+)
+CPMAddPackage(
         NAME flecs
         VERSION 4.1.6
         URL https://github.com/SanderMertens/flecs/archive/refs/tags/v4.1.6.tar.gz

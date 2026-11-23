@@ -7,20 +7,18 @@ file(GLOB_RECURSE EUPHROSYNE_SOURCES CONFIGURE_DEPENDS
 
 add_library(euphrosyne STATIC
         ${EUPHROSYNE_SOURCES}
-        formats/texture.hpp
 )
 
-find_package(Vulkan REQUIRED)
-target_link_libraries(nvrhi_vk PUBLIC nvrhi)
 target_link_libraries(euphrosyne PUBLIC
-        nvrhi
-        nvrhi_vk
+        Diligent-Common
+        Diligent-BasicPlatform
+        Diligent-Archiver-shared
+        Diligent-GraphicsEngineOpenGL-shared
+        Diligent-GraphicsEngineVk-shared
         flecs::flecs
         SDL3::SDL3
         flux::flux
         glaze::glaze
-        Vulkan::Vulkan
-        vk-bootstrap::vk-bootstrap
         Boost::unordered
         Boost::asio
         Boost::system
@@ -31,7 +29,6 @@ target_link_libraries(euphrosyne PUBLIC
         glm::glm
         dylib
         soloud
-        euphrosyne_cpu_flags
 )
 
 target_precompile_headers(euphrosyne PUBLIC

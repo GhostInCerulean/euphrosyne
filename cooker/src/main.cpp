@@ -2,16 +2,25 @@
 
 #include <iostream>
 #include <set>
+#include <CLI/ExtraValidators.hpp>
 
 #include "archive/archive_writer.hpp"
 #include "blender/blender_to_gltf.hpp"
 #include "shaderc/compile.hpp"
 #include "texture_cooker.hpp"
+
 #include <CLI/App.hpp>
 #include <boost/asio/io_context.hpp>
 
 #include "euphrosyne/dev/logging.hpp"
 #include "euphrosyne/utils/io/file.hpp"
+
+#ifdef MAP_TYPE
+#undef MAP_TYPE
+#endif
+
+#include "PipelineState.h"
+#include "InputLayout.h"
 
 using namespace euphrosyne;
 using namespace cooker;
@@ -45,7 +54,12 @@ int main(int argc, char **argv)
     auto shaders = app.add_subcommand("shaders", "Compile and pack shaders");
     auto shader_roots = vector<string>();
     auto shader_out = string();
+    auto shader_backends = vector<string>{"vulkan"};
 
+    shaders->add_option("-b,--backend", shader_backends,
+                        "Backends to bake in: vulkan, gl, gles, d3d11, d3d12, metal-mac, metal-ios")
+        ->delimiter(',')
+        ->check(CLI::IsMember({"vulkan", "gl", "gles", "d3d11", "d3d12", "metal-mac", "metal-ios"}));
     shaders->add_option("shader_roots", shader_roots, "Root directories of shader source files")
         ->required()
         ->expected(1, -1) // one or more
@@ -70,33 +84,50 @@ int main(int argc, char **argv)
 
     if (*shaders)
     {
-        auto writer = ArchiveWriter();
-
-        for (const auto &root : shader_roots)
+        auto opts = cooker::Options();
+        opts.backends = cooker::Backend::None;
+        for (const auto &b : shader_backends)
         {
-            for (const auto &entry : fs::recursive_directory_iterator(root))
-            {
-                if (!entry.is_regular_file() || entry.path().extension() != ".hlsl")
-                {
-                    continue;
-                }
-
-                auto entry_path = entry.path();
-                entry_path.make_preferred();
-                auto key = fs::relative(entry_path, root).make_preferred().generic_string();
-                LOG_INFO(cooker_logger, "Compiling shader {}...", key);
-                auto spirv = CompileHlsl(entry.path());
-                LOG_INFO(cooker_logger, "Compiled shader {} to {} bytes of SPIR-V", key, spirv.size());
-                writer.Add(std::move(key), std::move(spirv));
-            }
+            if (b == "vulkan")         opts.backends = opts.backends | cooker::Backend::Vulkan;
+            else if (b == "gl")        opts.backends = opts.backends | cooker::Backend::GL;
+            else if (b == "gles")      opts.backends = opts.backends | cooker::Backend::GLES;
+            else if (b == "d3d11")     opts.backends = opts.backends | cooker::Backend::D3D11;
+            else if (b == "d3d12")     opts.backends = opts.backends | cooker::Backend::D3D12;
+            else if (b == "metal-mac") opts.backends = opts.backends | cooker::Backend::MetalMac;
+            else if (b == "metal-ios") opts.backends = opts.backends | cooker::Backend::MetalIOS;
         }
 
-        auto out_path = fs::path(shader_out);
-        if (out_path.has_parent_path())
-            fs::create_directories(out_path.parent_path());
+        auto shader_archiver = cooker::ShaderArchiver(opts);
 
-        auto written = writer.Write(shader_out);
-        LOG_INFO(cooker_logger, "Wrote shader archive {} of {} bytes", shader_out, written);
+        // Input layouts (and anything else the // @directives can't express) go here.
+        auto hook = [](const std::string &name, Diligent::GraphicsPipelineStateCreateInfo &ci) {
+            if (name == "mesh")
+            {
+                static const Diligent::LayoutElement layout[] = {
+                    {0, 0, 3, Diligent::VT_FLOAT32, false}, // ATTRIB0 position
+                    {1, 0, 2, Diligent::VT_FLOAT32, false}, // ATTRIB1 uv
+                };
+                ci.GraphicsPipeline.InputLayout.LayoutElements = layout;
+                ci.GraphicsPipeline.InputLayout.NumElements    = std::size(layout);
+            }
+        };
+
+        try
+        {
+            for (const auto &root : shader_roots)
+            {
+                QUILL_LOG_INFO(cooker_logger, "Cooking shaders in {}...", root);
+                shader_archiver.CookDirectory(root, hook);
+            }
+        }
+        catch (const std::exception &e)
+        {
+            QUILL_LOG_ERROR(cooker_logger, "Shader cook failed: {}", e.what());
+            return 1;
+        }
+
+        shader_archiver.SerializeToFile(shader_out); // creates parent directories itself
+        QUILL_LOG_INFO(cooker_logger, "Wrote shader archive {}", shader_out);
     }
     else if (*archive)
     {
@@ -112,7 +143,7 @@ int main(int argc, char **argv)
             fs::create_directories(out_path.parent_path());
 
         auto written = writer.Write(archive_out);
-        LOG_INFO(cooker_logger, "Wrote archive {} of {} bytes", archive_out, written);
+        QUILL_LOG_INFO(cooker_logger, "Wrote archive {} of {} bytes", archive_out, written);
     }
     else if (*levels)
     {
@@ -142,7 +173,7 @@ int main(int argc, char **argv)
             auto gltf_path = input_path;
             if (input_path.extension() == ".blend")
             {
-                LOG_INFO(cooker_logger, "Exporting blend file {} to glTF", input);
+                QUILL_LOG_INFO(cooker_logger, "Exporting blend file {} to glTF", input);
                 fs::create_directories(temp_dir);
                 gltf_path = temp_dir / (name + ".gltf");
                 BlenderToGltf(ioc, input, gltf_path);
@@ -164,10 +195,10 @@ int main(int argc, char **argv)
                 }
             }
 
-            LOG_INFO(cooker_logger, "Cooking level file {}", gltf_path.string());
+            QUILL_LOG_INFO(cooker_logger, "Cooking level file {}", gltf_path.string());
             auto writer = ArchiveWriter();
             auto result = CookGltf(gltf_path, writer, options);
-            LOG_INFO(cooker_logger, "Cooked {}: level hash {:#x}, {} textures requested", name, result.level,
+            QUILL_LOG_INFO(cooker_logger, "Cooked {}: level hash {:#x}, {} textures requested", name, result.level,
                      result.textures.size());
 
             // Texture requests carry the encoded image bytes, so this is safe before temp files are removed.
@@ -175,11 +206,11 @@ int main(int argc, char **argv)
 
             auto out_path = fs::path(level_out_dir) / name;
             auto written = writer.Write(out_path);
-            LOG_INFO(cooker_logger, "Wrote level archive {} of {} bytes", out_path.string(), written);
+            QUILL_LOG_INFO(cooker_logger, "Wrote level archive {} of {} bytes", out_path.string(), written);
         }
 
         auto written = texture_writer.Write(texture_out_path);
-        LOG_INFO(cooker_logger, "Wrote texture archive {} of {} bytes ({} textures)", level_texture_out, written,
+        QUILL_LOG_INFO(cooker_logger, "Wrote texture archive {} of {} bytes ({} textures)", level_texture_out, written,
                  texture_cooker.Count());
 
         auto ec = std::error_code();

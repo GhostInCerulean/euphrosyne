@@ -15,8 +15,8 @@ target_link_libraries(euphrosyne_example
         euphrosyne_example_core
 )
 
-euphrosyne_cook_shaders(euphrosyne_example shaders.pak
-        ROOTS
-        ${CMAKE_SOURCE_DIR}/example/assets/shaders
-        ${CMAKE_SOURCE_DIR}/euphrosyne/assets/shaders
-)
+#euphrosyne_cook_shaders(euphrosyne_example shaders.pak
+#        ROOTS
+#        ${CMAKE_SOURCE_DIR}/example/assets/shaders
+#        ${CMAKE_SOURCE_DIR}/euphrosyne/assets/shaders
+#)

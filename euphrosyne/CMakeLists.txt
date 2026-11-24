@@ -5,7 +5,7 @@ file(GLOB_RECURSE EUPHROSYNE_SOURCES CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/*.h"
 )
 
-add_library(euphrosyne STATIC
+add_library(euphrosyne SHARED
         ${EUPHROSYNE_SOURCES}
 )
 
@@ -30,6 +30,12 @@ target_link_libraries(euphrosyne PUBLIC
         dylib
         soloud
 )
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LIBURING REQUIRED IMPORTED_TARGET liburing)
+    target_link_libraries(euphrosyne PRIVATE PkgConfig::LIBURING)
+endif()
 
 target_precompile_headers(euphrosyne PUBLIC
         pch.hpp
